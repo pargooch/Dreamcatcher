@@ -1,0 +1,20 @@
+# Xcode
+build/
+*.xcuserstate
+*.xcworkspace
+xcuserdata/
+DerivedData/
+
+# Secrets - NEVER commit API keys
+Secrets.plist
+Info.plist
+
+# CocoaPods
+Pods/
+
+# macOS
+.DS_Store
+
+# Swift Package Manager
+.build/
+.swiftpm/

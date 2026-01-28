@@ -3,47 +3,94 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject var store: DreamStore
     @State private var showNewDream = false
-    
+    @State private var showSettings = false
+
     var body: some View {
-        NavigationView {
+        NavigationStack {
             List {
                 if store.dreams.isEmpty {
-                    Text("No dreams yet. Tap + to add one 🌙")
+                    Text("No dreams yet")
                         .foregroundColor(.secondary)
                 }
-                
+
                 ForEach(store.dreams) { dream in
-                    NavigationLink(destination: DreamDetailView(dream: dream)) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(dream.originalText)
-                                .lineLimit(2)
-                                .font(.body)
-                            
-                            if let tone = dream.tone {
-                                Text("Rewritten: \(tone.capitalized)")
-                                    .font(.caption)
-                                    .foregroundColor(.green)
-                            } else {
-                                Text("Not rewritten yet")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                        .padding(.vertical, 4)
+                    NavigationLink {
+                        DreamDetailView(dream: dream)
+                    } label: {
+                        DreamRowView(dream: dream)
                     }
                 }
+                .onDelete(perform: deleteDreams)
             }
-            .navigationTitle("DreamCatcher")
+            .navigationTitle("Dreamcatcher")
             .toolbar {
-                Button {
-                    showNewDream = true
-                } label: {
-                    Image(systemName: "plus")
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        showSettings = true
+                    } label: {
+                        Image(systemName: "gearshape")
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        showNewDream = true
+                    } label: {
+                        Image(systemName: "plus")
+                    }
                 }
             }
             .sheet(isPresented: $showNewDream) {
                 NewDreamView()
             }
+            .sheet(isPresented: $showSettings) {
+                NavigationView {
+                    NotificationSettingsView()
+                        .toolbar {
+                            ToolbarItem(placement: .confirmationAction) {
+                                Button("Done") {
+                                    showSettings = false
+                                }
+                            }
+                        }
+                }
+            }
         }
     }
+
+    private func deleteDreams(at offsets: IndexSet) {
+        for index in offsets {
+            let dream = store.dreams[index]
+            NotificationManager.shared.cancelDreamNotification(for: dream.id)
+            store.deleteDream(dream)
+        }
+    }
+}
+
+struct DreamRowView: View {
+    let dream: Dream
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(dream.originalText)
+                .lineLimit(2)
+
+            HStack {
+                Text(dream.date, style: .date)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                if dream.rewrittenText != nil {
+                    Spacer()
+                    Image(systemName: "sparkles")
+                        .font(.caption)
+                        .foregroundColor(.accentColor)
+                }
+            }
+        }
+    }
+}
+
+#Preview {
+    ContentView()
+        .environmentObject(DreamStore())
 }
