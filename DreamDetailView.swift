@@ -147,6 +147,12 @@ struct DreamDetailView: View {
                     .padding(.top)
                 }
 
+                // Image generation section (only show if rewritten)
+                if dream.rewrittenText != nil {
+                    Divider()
+                    DreamImageSection(dream: dream, store: store)
+                }
+
                 Divider()
 
                 // Per-dream notification management
@@ -562,6 +568,372 @@ struct AddDreamReminderSheet: View {
             try await UNUserNotificationCenter.current().add(request)
         } catch {
             print("Failed to schedule notification: \(error)")
+        }
+    }
+}
+
+// MARK: - Dream Image Section
+
+struct DreamImageSection: View {
+    let dream: Dream
+    let store: DreamStore
+
+    @StateObject private var imageService = ImageGenerationService()
+    @State private var selectedStyle: DreamImageStyle = .illustration
+    @State private var numberOfImages: Int = 4
+    @State private var showImageGallery = false
+    @State private var errorMessage: String?
+
+    private var isAvailable: Bool {
+        ImageGenerationService.isAvailable
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Header
+            HStack {
+                Image(systemName: "photo.stack.fill")
+                    .foregroundColor(.accentColor)
+                Text("Dream Visualization")
+                    .font(.headline)
+
+                Spacer()
+
+                if dream.hasImages {
+                    Button {
+                        showImageGallery = true
+                    } label: {
+                        Label("View", systemImage: "eye")
+                            .font(.subheadline)
+                    }
+                    .buttonStyle(.bordered)
+                }
+            }
+
+            // Show provider info if available
+            if isAvailable && !dream.hasImages {
+                HStack(spacing: 4) {
+                    Image(systemName: "apple.logo")
+                        .font(.caption2)
+                    Text("Using Apple Image Playground")
+                        .font(.caption)
+                }
+                .foregroundColor(.secondary)
+            }
+
+            if !isAvailable {
+                // Not available message
+                VStack(spacing: 8) {
+                    Image(systemName: "apple.logo")
+                        .font(.largeTitle)
+                        .foregroundColor(.secondary)
+                    Text("Coming Soon")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                    Text("Image generation requires Xcode 16.3+ and iOS 18.4+ with Apple Intelligence.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 20)
+            } else if dream.hasImages {
+                // Show existing images preview
+                DreamImagePreview(images: dream.sortedImages)
+
+                // Style picker for regeneration
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Style")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+
+                    HStack(spacing: 12) {
+                        ForEach(DreamImageStyle.allCases) { style in
+                            StyleButton(
+                                style: style,
+                                isSelected: selectedStyle == style
+                            ) {
+                                selectedStyle = style
+                            }
+                        }
+                    }
+                }
+
+                // Number of images for regeneration
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Number of Scenes")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+
+                    Picker("Scenes", selection: $numberOfImages) {
+                        Text("2").tag(2)
+                        Text("3").tag(3)
+                        Text("4").tag(4)
+                        Text("6").tag(6)
+                    }
+                    .pickerStyle(.segmented)
+                }
+
+                // Regenerate option with loading state
+                if imageService.isGenerating {
+                    VStack(spacing: 12) {
+                        ProgressView(value: imageService.progress) {
+                            Text("Regenerating images...")
+                        }
+
+                        Button("Cancel") {
+                            imageService.cancel()
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                } else {
+                    Button {
+                        generateImages()
+                    } label: {
+                        Label("Regenerate Images", systemImage: "arrow.clockwise")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                }
+
+                // Error message
+                if let error = errorMessage {
+                    Text(error)
+                        .font(.caption)
+                        .foregroundColor(.red)
+                        .multilineTextAlignment(.center)
+                }
+            } else {
+                // Generation options
+                Text("Create a visual sequence of your peaceful dream")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                // Style picker
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Style")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+
+                    HStack(spacing: 12) {
+                        ForEach(DreamImageStyle.allCases) { style in
+                            StyleButton(
+                                style: style,
+                                isSelected: selectedStyle == style
+                            ) {
+                                selectedStyle = style
+                            }
+                        }
+                    }
+                }
+
+                // Number of images
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Number of Scenes")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+
+                    Picker("Scenes", selection: $numberOfImages) {
+                        Text("2").tag(2)
+                        Text("3").tag(3)
+                        Text("4").tag(4)
+                        Text("6").tag(6)
+                    }
+                    .pickerStyle(.segmented)
+                }
+
+                // Generate button
+                if imageService.isGenerating {
+                    VStack(spacing: 12) {
+                        ProgressView(value: imageService.progress) {
+                            Text("Generating images...")
+                        }
+
+                        Button("Cancel") {
+                            imageService.cancel()
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                } else {
+                    Button {
+                        generateImages()
+                    } label: {
+                        Label("Generate Dream Sequence", systemImage: "wand.and.stars")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+
+                // Error message
+                if let error = errorMessage {
+                    Text(error)
+                        .font(.caption)
+                        .foregroundColor(.red)
+                        .multilineTextAlignment(.center)
+                }
+            }
+        }
+        .padding()
+        .background(Color(.systemGray6))
+        .cornerRadius(12)
+        .sheet(isPresented: $showImageGallery) {
+            DreamImageGalleryView(dream: dream)
+        }
+        .onAppear {
+            // Initialize style from existing dream images
+            if let styleString = dream.imageStyle,
+               let style = DreamImageStyle.allCases.first(where: { $0.rawValue == styleString }) {
+                selectedStyle = style
+            }
+            // Initialize number of images from existing
+            if let images = dream.generatedImages, !images.isEmpty {
+                numberOfImages = images.count
+            }
+        }
+    }
+
+    private func generateImages() {
+        guard let rewrittenText = dream.rewrittenText else { return }
+        print("AGAIN WE ARE HERE THIS IS THE PROMPT \(rewrittenText)")
+
+        errorMessage = nil
+    
+
+        Task {
+            do {
+                let images = try await imageService.generateSequenceImages(
+                    from: rewrittenText,
+                    style: selectedStyle,
+                    numberOfImages: numberOfImages
+                )
+
+                // Update dream with generated images
+                var updated = dream
+                updated.generatedImages = images
+                updated.imageStyle = selectedStyle.rawValue
+                store.updateDream(updated)
+            } catch let error as ImageGenerationError {
+                errorMessage = error.localizedDescription
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
+    }
+}
+
+struct StyleButton: View {
+    let style: DreamImageStyle
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 4) {
+                Image(systemName: style.icon)
+                    .font(.title2)
+                Text(style.rawValue)
+                    .font(.caption2)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(isSelected ? Color.accentColor : Color(.systemBackground))
+            .foregroundColor(isSelected ? .white : .primary)
+            .cornerRadius(8)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+struct DreamImagePreview: View {
+    let images: [GeneratedDreamImage]
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 12) {
+                ForEach(images) { image in
+                    if let uiImage = image.uiImage {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 100, height: 100)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct DreamImageGalleryView: View {
+    let dream: Dream
+    @Environment(\.dismiss) private var dismiss
+    @State private var selectedIndex: Int = 0
+
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                // Main image
+                TabView(selection: $selectedIndex) {
+                    ForEach(Array(dream.sortedImages.enumerated()), id: \.element.id) { index, image in
+                        VStack {
+                            if let uiImage = image.uiImage {
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                    .padding()
+                            }
+
+                            Text("Scene \(index + 1)")
+                                .font(.headline)
+
+                            Text(image.prompt)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal)
+                        }
+                        .tag(index)
+                    }
+                }
+                .tabViewStyle(.page(indexDisplayMode: .automatic))
+
+                // Thumbnail strip
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(Array(dream.sortedImages.enumerated()), id: \.element.id) { index, image in
+                            if let uiImage = image.uiImage {
+                                Button {
+                                    withAnimation {
+                                        selectedIndex = index
+                                    }
+                                } label: {
+                                    Image(uiImage: uiImage)
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: 60, height: 60)
+                                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 6)
+                                                .stroke(selectedIndex == index ? Color.accentColor : Color.clear, lineWidth: 2)
+                                        )
+                                }
+                            }
+                        }
+                    }
+                    .padding()
+                }
+                .background(Color(.systemGray6))
+            }
+            .navigationTitle("Dream Sequence")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
         }
     }
 }
