@@ -13,6 +13,16 @@ struct UserProfile: Codable {
     let gender: String?
     let age: Int?
     let timezone: String?
+    let avatar_url: String?
+    let avatar_description: String?
+
+    init(gender: String? = nil, age: Int? = nil, timezone: String? = nil, avatar_url: String? = nil, avatar_description: String? = nil) {
+        self.gender = gender
+        self.age = age
+        self.timezone = timezone
+        self.avatar_url = avatar_url
+        self.avatar_description = avatar_description
+    }
 }
 
 struct AuthResponse: Codable {

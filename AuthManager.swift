@@ -175,6 +175,56 @@ class AuthManager: ObservableObject {
         clearAvatarFromDocuments()
     }
     
+    /// Update profile on backend (PATCH) and cache locally
+    func updateProfile(gender: String?, age: Int?) async {
+        do {
+            let updated = try await backendService.updateMyProfile(
+                gender: gender,
+                age: age
+            )
+            await MainActor.run {
+                self.userProfile = updated
+                cacheProfile(updated)
+            }
+        } catch {
+            print("Failed to update profile: \(error)")
+        }
+    }
+
+    /// Fetch profile from backend and cache locally
+    func fetchProfile() async {
+        guard isAuthenticated else { return }
+        do {
+            let profile = try await backendService.getMyProfile()
+            await MainActor.run {
+                self.userProfile = profile
+                cacheProfile(profile)
+                if let desc = profile.avatar_description {
+                    self.avatarDescription = desc
+                    UserDefaults.standard.set(desc, forKey: avatarDescriptionKey)
+                }
+            }
+        } catch {
+            print("Failed to fetch profile: \(error)")
+        }
+    }
+
+    private func cacheProfile(_ profile: UserProfile) {
+        if let gender = profile.gender {
+            UserDefaults.standard.set(gender, forKey: genderKey)
+        } else {
+            UserDefaults.standard.removeObject(forKey: genderKey)
+        }
+        if let age = profile.age {
+            UserDefaults.standard.set(age, forKey: ageKey)
+        } else {
+            UserDefaults.standard.removeObject(forKey: ageKey)
+        }
+        if let tz = profile.timezone {
+            UserDefaults.standard.set(tz, forKey: timezoneKey)
+        }
+    }
+
     /// Toggle cloud sync on/off
     func setCloudEnabled(_ enabled: Bool) {
         isCloudEnabled = enabled
@@ -214,18 +264,10 @@ class AuthManager: ObservableObject {
             self.userEmail = email
             self.isAuthenticated = true
 
-            // Cache user profile
+            // Cache user profile from auth response
             if let profile = response.user.profile {
                 self.userProfile = profile
-                if let gender = profile.gender {
-                    UserDefaults.standard.set(gender, forKey: genderKey)
-                }
-                if let age = profile.age {
-                    UserDefaults.standard.set(age, forKey: ageKey)
-                }
-                if let tz = profile.timezone {
-                    UserDefaults.standard.set(tz, forKey: timezoneKey)
-                }
+                cacheProfile(profile)
             }
 
             // Persist to UserDefaults

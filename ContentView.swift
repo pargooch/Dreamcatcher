@@ -13,18 +13,17 @@ struct ContentView: View {
                         emptyState
                     } else {
                         ForEach(store.dreams) { dream in
-                            NavigationLink {
-                                DreamDetailView(dream: dream)
-                            } label: {
-                                DreamRowView(dream: dream)
-                            }
-                            .buttonStyle(.plain)
-                            .contextMenu {
-                                Button(role: .destructive) {
-                                    NotificationManager.shared.cancelDreamNotification(for: dream.id)
-                                    store.deleteDream(dream)
+                            SwipeToDeleteWrapper {
+                                NavigationLink {
+                                    DreamDetailView(dream: dream)
                                 } label: {
-                                    Label("Delete", systemImage: "trash")
+                                    DreamRowView(dream: dream)
+                                }
+                                .buttonStyle(.plain)
+                            } onDelete: {
+                                NotificationManager.shared.cancelDreamNotification(for: dream.id)
+                                withAnimation(.spring(response: 0.3)) {
+                                    store.deleteDream(dream)
                                 }
                             }
                         }
@@ -162,6 +161,87 @@ struct DreamRowView: View {
         .onAppear {
             withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                 appeared = true
+            }
+        }
+    }
+}
+
+// MARK: - Swipe to Delete
+
+struct SwipeToDeleteWrapper<Content: View>: View {
+    let content: Content
+    let onDelete: () -> Void
+
+    @State private var offset: CGFloat = 0
+    @State private var showConfirm = false
+    @Environment(\.colorScheme) private var colorScheme
+
+    private let deleteThreshold: CGFloat = -80
+    private let snapThreshold: CGFloat = -40
+
+    init(@ViewBuilder content: () -> Content, onDelete: @escaping () -> Void) {
+        self.content = content()
+        self.onDelete = onDelete
+    }
+
+    var body: some View {
+        ZStack(alignment: .trailing) {
+            // Delete background
+            HStack(spacing: 0) {
+                Spacer()
+                Button {
+                    withAnimation(.spring(response: 0.3)) {
+                        onDelete()
+                    }
+                } label: {
+                    VStack(spacing: 4) {
+                        Image(systemName: "trash.fill")
+                            .font(.system(size: 20, weight: .bold))
+                        Text("DELETE")
+                            .font(.system(size: 10, weight: .black))
+                    }
+                    .foregroundColor(.white)
+                    .frame(width: 80)
+                    .frame(maxHeight: .infinity)
+                    .background(ComicTheme.Colors.crimsonRed)
+                    .clipShape(RoundedRectangle(cornerRadius: ComicTheme.Dimensions.panelCornerRadius))
+                }
+                .buttonStyle(.plain)
+            }
+            .opacity(offset < 0 ? 1 : 0)
+
+            // Main content
+            content
+                .offset(x: offset)
+                .gesture(
+                    DragGesture(minimumDistance: 20)
+                        .onChanged { value in
+                            let translation = value.translation.width
+                            // Only allow swiping left
+                            if translation < 0 {
+                                offset = translation * 0.8
+                            } else if offset < 0 {
+                                offset = min(0, offset + translation * 0.3)
+                            }
+                        }
+                        .onEnded { value in
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                if offset < deleteThreshold {
+                                    // Snap open to show delete button
+                                    offset = deleteThreshold
+                                } else {
+                                    offset = 0
+                                }
+                            }
+                        }
+                )
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if offset < 0 {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                    offset = 0
+                }
             }
         }
     }

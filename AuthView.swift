@@ -48,12 +48,7 @@ struct AuthView: View {
                 if !isLoginMode {
                     ComicPanelCard(titleBanner: "Profile", bannerColor: ComicTheme.Colors.deepPurple) {
                         VStack(spacing: 14) {
-                            ComicTextField(
-                                icon: "person.fill",
-                                iconColor: ComicTheme.Colors.deepPurple,
-                                placeholder: "Gender",
-                                text: $gender
-                            )
+                            GenderPicker(selection: $gender)
 
                             ComicTextField(
                                 icon: "number",

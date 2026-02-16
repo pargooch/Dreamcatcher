@@ -89,7 +89,16 @@ struct SettingsView: View {
 struct AccountView: View {
     @StateObject private var authManager = AuthManager.shared
     @State private var showAvatarPicker = false
+    @State private var gender: String = ""
+    @State private var ageString: String = ""
+    @State private var isSaving = false
     @Environment(\.colorScheme) private var colorScheme
+
+    private var profileChanged: Bool {
+        let currentGender = authManager.userProfile?.gender ?? ""
+        let currentAge = authManager.userProfile?.age.map { String($0) } ?? ""
+        return gender != currentGender || ageString != currentAge
+    }
 
     var body: some View {
         ScrollView {
@@ -113,33 +122,62 @@ struct AccountView: View {
                                 .font(ComicTheme.Typography.speechBubble(12))
                                 .foregroundColor(ComicTheme.Colors.emeraldGreen)
                             }
-                            if let profile = authManager.userProfile {
-                                HStack(spacing: 4) {
-                                    if let gender = profile.gender {
-                                        Text(gender.capitalized)
-                                    }
-                                    if let age = profile.age {
-                                        Text("· \(age)")
-                                    }
-                                }
-                                .font(ComicTheme.Typography.speechBubble(12))
-                                .foregroundColor(.secondary)
-                            }
                         }
                         Spacer()
                     }
                 }
 
-                // Avatar description
-                if authManager.avatarDescription != nil {
-                    ComicPanelCard(titleBanner: "Dream Character", bannerColor: ComicTheme.Colors.hotPink) {
-                        HStack(spacing: 12) {
-                            Image(systemName: "person.text.rectangle")
-                                .font(.title3.weight(.bold))
-                                .foregroundColor(ComicTheme.Colors.hotPink)
-                            Text(authManager.avatarDescription ?? "")
-                                .font(ComicTheme.Typography.speechBubble(13))
-                                .foregroundColor(.secondary)
+                // Dream Character profile
+                ComicPanelCard(titleBanner: "Dream Character", bannerColor: ComicTheme.Colors.hotPink) {
+                    VStack(spacing: 14) {
+                        Text("These details personalize your dream comics")
+                            .font(ComicTheme.Typography.speechBubble(12))
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+
+                        GenderPicker(selection: $gender)
+
+                        ComicTextField(
+                            icon: "number",
+                            iconColor: ComicTheme.Colors.goldenYellow,
+                            placeholder: "Age",
+                            text: $ageString,
+                            keyboardType: .numberPad
+                        )
+
+                        if let desc = authManager.avatarDescription {
+                            HStack(spacing: 10) {
+                                Image(systemName: "person.text.rectangle")
+                                    .font(.body.weight(.bold))
+                                    .foregroundColor(ComicTheme.Colors.hotPink)
+                                    .frame(width: 24)
+                                Text(desc)
+                                    .font(ComicTheme.Typography.speechBubble(13))
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding(12)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(colorScheme == .dark ? Color(white: 0.12) : Color.white.opacity(0.8))
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(ComicTheme.panelBorderColor(colorScheme).opacity(0.3), lineWidth: 1.5)
+                            )
+                        }
+
+                        if profileChanged {
+                            Button {
+                                Task { await saveProfile() }
+                            } label: {
+                                if isSaving {
+                                    ProgressView()
+                                        .tint(.white)
+                                } else {
+                                    Label("Save", systemImage: "checkmark.circle.fill")
+                                }
+                            }
+                            .buttonStyle(.comicPrimary(color: ComicTheme.Colors.hotPink))
+                            .disabled(isSaving)
                         }
                     }
                 }
@@ -157,8 +195,71 @@ struct AccountView: View {
         .halftoneBackground()
         .navigationTitle("Account")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            gender = authManager.userProfile?.gender ?? ""
+            ageString = authManager.userProfile?.age.map { String($0) } ?? ""
+        }
         .sheet(isPresented: $showAvatarPicker) {
             AvatarPickerView()
         }
+    }
+
+    private func saveProfile() async {
+        isSaving = true
+        await authManager.updateProfile(
+            gender: gender.isEmpty ? nil : gender,
+            age: Int(ageString)
+        )
+        isSaving = false
+    }
+}
+
+// MARK: - Gender Picker
+
+struct GenderPicker: View {
+    @Binding var selection: String
+    @Environment(\.colorScheme) private var colorScheme
+
+    private let options = ["Male", "Female", "Non-binary", "Prefer not to say"]
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "person.fill")
+                .font(.body.weight(.bold))
+                .foregroundColor(ComicTheme.Colors.deepPurple)
+                .frame(width: 24)
+
+            Menu {
+                ForEach(options, id: \.self) { option in
+                    Button {
+                        selection = option
+                    } label: {
+                        HStack {
+                            Text(option)
+                            if selection == option {
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+                }
+            } label: {
+                HStack {
+                    Text(selection.isEmpty ? "Gender" : selection)
+                        .font(ComicTheme.Typography.speechBubble())
+                        .foregroundColor(selection.isEmpty ? .secondary : .primary)
+                    Spacer()
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.caption.weight(.bold))
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
+        .padding(12)
+        .background(colorScheme == .dark ? Color(white: 0.12) : Color.white.opacity(0.8))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(ComicTheme.panelBorderColor(colorScheme).opacity(0.3), lineWidth: 1.5)
+        )
     }
 }

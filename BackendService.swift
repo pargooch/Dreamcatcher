@@ -297,6 +297,25 @@ class BackendService {
         return try await send(request, as: ComicPageGenerationResponse.self)
     }
 
+    // MARK: - Profile
+
+    func getMyProfile() async throws -> UserProfile {
+        let url = try makeURL(path: "users/me/profile")
+        let request = try makeRequest(url: url, method: "GET", requiresAuth: true)
+        return try await send(request, as: UserProfile.self)
+    }
+
+    func updateMyProfile(gender: String? = nil, age: Int? = nil, timezone: String? = nil) async throws -> UserProfile {
+        let url = try makeURL(path: "users/me/profile")
+        var body: [String: Any] = [:]
+        if let gender = gender { body["gender"] = gender }
+        if let age = age { body["age"] = age }
+        if let timezone = timezone { body["timezone"] = timezone }
+        let data = try JSONSerialization.data(withJSONObject: body)
+        let request = try makeRequest(url: url, method: "PATCH", body: data, requiresAuth: true)
+        return try await send(request, as: UserProfile.self)
+    }
+
     // MARK: - Avatar
 
     func uploadAvatar(imageData: Data) async throws -> AvatarResponse {
