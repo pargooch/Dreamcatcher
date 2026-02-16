@@ -86,6 +86,66 @@ struct AIGenerateImageResponse: Codable {
     let image_url: String
 }
 
+// MARK: - Single-Shot Comic Page Response
+
+struct ComicPageGenerationResponse: Codable {
+    let model_used: String
+    let pages: [ComicPageImageResponse]
+}
+
+struct ComicPageImageResponse: Codable {
+    let page_number: Int
+    let image_url: String  // base64 data URL or remote URL
+}
+
+// MARK: - Legacy Comic Layout Plan Models (kept for local MLX path)
+
+struct ComicLayoutPlan: Codable {
+    let model_used: String
+    let layout: ComicLayout
+}
+
+struct ComicLayout: Codable {
+    let title_text: String?
+    let layout_type: String
+    let pages: [ComicPagePlan]
+}
+
+struct ComicPagePlan: Codable {
+    let page_number: Int
+    let panels: [ComicPanelPlan]
+}
+
+struct PanelPosition: Codable {
+    let row: Int
+    let col: Int
+}
+
+struct ComicPanelPlan: Codable {
+    let panel_number: Int
+    let position: PanelPosition
+    let size: String
+    let image_prompt: String
+    let speech_bubble: String?
+    let sound_effect: String?
+    let narrative_caption: String?
+}
+
+// MARK: - Dreamer Profile
+
+struct DreamerProfile: Codable {
+    let gender: String?
+    let age: Int?
+    let avatar_description: String?
+}
+
+// MARK: - Avatar Response
+
+struct AvatarResponse: Codable {
+    let avatar_url: String
+    let avatar_description: String
+}
+
 enum BackendError: LocalizedError {
     case invalidURL
     case networkError(Error)

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AuthView: View {
     @StateObject private var authManager = AuthManager.shared
+    @Environment(\.colorScheme) private var colorScheme
 
     @State private var email: String = ""
     @State private var password: String = ""
@@ -11,67 +12,118 @@ struct AuthView: View {
     @State private var timezone: String = TimeZone.current.identifier
 
     var body: some View {
-        Form {
-            Section {
-                TextField("Email", text: $email)
-                    .keyboardType(.emailAddress)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled(true)
+        ScrollView {
+            VStack(spacing: ComicTheme.Dimensions.gutterWidth) {
+                // Title sound effect
+                SoundEffectText(
+                    text: isLoginMode ? "LOG IN!" : "SIGN UP!",
+                    fillColor: ComicTheme.Colors.boldBlue,
+                    fontSize: 32
+                )
+                .padding(.top, 8)
 
-                SecureField("Password", text: $password)
-            } header: {
-                Text("Account")
-            }
-
-            if !isLoginMode {
-                Section {
-                    TextField("Gender", text: $gender)
-                    TextField("Age", text: $ageString)
-                        .keyboardType(.numberPad)
-                    TextField("Timezone (e.g., \(TimeZone.current.identifier))", text: $timezone)
+                // Credentials
+                ComicPanelCard(titleBanner: "Account", bannerColor: ComicTheme.Colors.boldBlue) {
+                    VStack(spacing: 14) {
+                        ComicTextField(
+                            icon: "envelope.fill",
+                            iconColor: ComicTheme.Colors.boldBlue,
+                            placeholder: "Email",
+                            text: $email,
+                            keyboardType: .emailAddress
+                        )
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled(true)
-                } header: {
-                    Text("Profile")
-                }
-            }
 
-            Section {
-                Button {
-                    Task {
-                        await submit()
+                        ComicSecureField(
+                            icon: "lock.fill",
+                            iconColor: ComicTheme.Colors.crimsonRed,
+                            placeholder: "Password",
+                            text: $password
+                        )
                     }
-                } label: {
-                    if authManager.isLoading {
+                }
+
+                // Profile fields (sign up only)
+                if !isLoginMode {
+                    ComicPanelCard(titleBanner: "Profile", bannerColor: ComicTheme.Colors.deepPurple) {
+                        VStack(spacing: 14) {
+                            ComicTextField(
+                                icon: "person.fill",
+                                iconColor: ComicTheme.Colors.deepPurple,
+                                placeholder: "Gender",
+                                text: $gender
+                            )
+
+                            ComicTextField(
+                                icon: "number",
+                                iconColor: ComicTheme.Colors.goldenYellow,
+                                placeholder: "Age",
+                                text: $ageString,
+                                keyboardType: .numberPad
+                            )
+
+                            ComicTextField(
+                                icon: "globe",
+                                iconColor: ComicTheme.Colors.emeraldGreen,
+                                placeholder: "Timezone (e.g., \(TimeZone.current.identifier))",
+                                text: $timezone
+                            )
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled(true)
+                        }
+                    }
+                }
+
+                // Submit
+                if authManager.isLoading {
+                    VStack(spacing: 12) {
+                        SoundEffectText(text: "LOADING!", fillColor: ComicTheme.Colors.boldBlue, fontSize: 20)
                         ProgressView()
-                    } else {
-                        Text(isLoginMode ? "Log In" : "Sign Up")
+                            .tint(ComicTheme.Colors.boldBlue)
                     }
+                } else {
+                    Button {
+                        Task {
+                            await submit()
+                        }
+                    } label: {
+                        Label(
+                            isLoginMode ? "Log In" : "Create Account",
+                            systemImage: isLoginMode ? "arrow.right.circle.fill" : "person.badge.plus"
+                        )
+                    }
+                    .buttonStyle(.comicPrimary(color: isLoginMode ? ComicTheme.Colors.boldBlue : ComicTheme.Colors.emeraldGreen))
+                    .disabled(isSubmitDisabled)
+                    .opacity(isSubmitDisabled ? 0.5 : 1.0)
                 }
-                .disabled(isSubmitDisabled)
 
-                HStack(spacing: 4) {
+                // Toggle mode
+                HStack(spacing: 6) {
                     Text(isLoginMode ? "Need an account?" : "Have an account?")
-                        .font(.footnote)
+                        .font(ComicTheme.Typography.speechBubble(14))
                         .foregroundColor(.secondary)
                     Button(isLoginMode ? "Sign Up" : "Log In") {
-                        isLoginMode.toggle()
+                        withAnimation(.spring(response: 0.3)) {
+                            isLoginMode.toggle()
+                        }
                     }
+                    .font(ComicTheme.Typography.comicButton(14))
+                    .foregroundColor(ComicTheme.Colors.boldBlue)
                     .buttonStyle(.plain)
-                    .font(.footnote)
-                    .foregroundColor(.accentColor)
                 }
-                .frame(maxWidth: .infinity, alignment: .center)
-            }
 
-            if let error = authManager.error {
-                Section {
+                // Error
+                if let error = authManager.error {
                     Text(error)
-                        .font(.footnote)
-                        .foregroundColor(.red)
+                        .font(ComicTheme.Typography.speechBubble(13))
+                        .foregroundColor(ComicTheme.Colors.crimsonRed)
+                        .speechBubble()
                 }
             }
+            .padding()
         }
+        .halftoneBackground()
         .navigationTitle(isLoginMode ? "Log In" : "Sign Up")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -94,5 +146,65 @@ struct AuthView: View {
         if authManager.isLoading { return true }
         guard !email.isEmpty, !password.isEmpty else { return true }
         return false
+    }
+}
+
+// MARK: - Comic Text Field
+
+struct ComicTextField: View {
+    let icon: String
+    var iconColor: Color = ComicTheme.Colors.boldBlue
+    let placeholder: String
+    @Binding var text: String
+    var keyboardType: UIKeyboardType = .default
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.body.weight(.bold))
+                .foregroundColor(iconColor)
+                .frame(width: 24)
+
+            TextField(placeholder, text: $text)
+                .font(ComicTheme.Typography.speechBubble())
+                .keyboardType(keyboardType)
+        }
+        .padding(12)
+        .background(colorScheme == .dark ? Color(white: 0.12) : Color.white.opacity(0.8))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(ComicTheme.panelBorderColor(colorScheme).opacity(0.3), lineWidth: 1.5)
+        )
+    }
+}
+
+// MARK: - Comic Secure Field
+
+struct ComicSecureField: View {
+    let icon: String
+    var iconColor: Color = ComicTheme.Colors.crimsonRed
+    let placeholder: String
+    @Binding var text: String
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.body.weight(.bold))
+                .foregroundColor(iconColor)
+                .frame(width: 24)
+
+            SecureField(placeholder, text: $text)
+                .font(ComicTheme.Typography.speechBubble())
+        }
+        .padding(12)
+        .background(colorScheme == .dark ? Color(white: 0.12) : Color.white.opacity(0.8))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(ComicTheme.panelBorderColor(colorScheme).opacity(0.3), lineWidth: 1.5)
+        )
     }
 }

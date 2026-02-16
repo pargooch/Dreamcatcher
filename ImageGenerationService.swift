@@ -153,19 +153,19 @@ class ImageGenerationService: ObservableObject {
         isGenerating = false
     }
 
-    /// Generate sequence images from a rewritten dream
-    /// When authenticated: fully backend (images generated server-side)
-    /// When not authenticated: fully local (AI prompts + MLX rendering)
-    func generateSequenceImages(
+    // MARK: - Comic Page Generation
+
+    /// Generate comic page(s) from a rewritten dream
+    /// Backend path: single-shot generate-comic-page endpoint
+    /// Local path: local layout planning → MLX render → ComicPageCompositor
+    func generateComicPage(
         from text: String,
-        style: DreamImageStyle
-    ) async throws -> [GeneratedDreamImage] {
-        // Cancel any existing task
+        style: DreamImageStyle,
+        dreamerProfile: DreamerProfile? = nil
+    ) async throws -> [ComicPageImage] {
         currentTask?.cancel()
         currentTask = nil
-
-        // Small delay to ensure previous resources are released
-        try await Task.sleep(nanoseconds: 500_000_000) // 0.5 second
+        try await Task.sleep(nanoseconds: 500_000_000)
 
         isGenerating = true
         isCancelled = false
@@ -178,120 +178,175 @@ class ImageGenerationService: ObservableObject {
         }
 
         if AuthManager.shared.isAuthenticated {
-            return try await generateWithBackend(text: text, style: style)
+            return try await generateComicPageWithBackend(text: text, style: style, dreamerProfile: dreamerProfile)
         } else {
-            return try await generateLocally(text: text, style: style)
+            return try await generateComicPageLocally(text: text, style: style, dreamerProfile: dreamerProfile)
         }
     }
 
-    // MARK: - Backend Image Generation (authenticated)
+    // MARK: - Backend Comic Page
 
-    private func generateWithBackend(text: String, style: DreamImageStyle) async throws -> [GeneratedDreamImage] {
-        // Step 1: Get panel prompts (text descriptions) from backend
-        statusMessage = "Creating comic panels..."
+    private func generateComicPageWithBackend(
+        text: String,
+        style: DreamImageStyle,
+        dreamerProfile: DreamerProfile?
+    ) async throws -> [ComicPageImage] {
+        statusMessage = "Painting your dream..."
+        progress = 0.1
 
-        let response = try await BackendService.shared.generateImages(
-            prompt: text,
+        let response = try await BackendService.shared.generateComicPage(
+            rewrittenText: text,
             style: style.rawValue,
-            numberOfPanels: 4
+            dreamerProfile: dreamerProfile
         )
 
         if isCancelled { throw ImageGenerationError.cancelled }
 
-        guard !response.panel_prompts.isEmpty else {
-            throw ImageGenerationError.noImagesGenerated
-        }
+        progress = 0.9
+        statusMessage = "Almost there..."
 
-        // Step 2: Render each panel prompt into an image via backend
-        var images: [GeneratedDreamImage] = []
-        let totalPanels = response.panel_prompts.count
-
-        for (index, panelPrompt) in response.panel_prompts.enumerated() {
-            if isCancelled { throw ImageGenerationError.cancelled }
-
-            statusMessage = "Generating image \(index + 1)/\(totalPanels)..."
-            progress = Double(index + 1) / Double(totalPanels)
-
-            let imageResponse = try await BackendService.shared.generateImage(prompt: panelPrompt)
-
-            // Decode base64 from image_url (format: "data:image/png;base64,...")
-            let imageUrl = imageResponse.image_url
-            let cleanBase64 = imageUrl.contains(",")
-                ? String(imageUrl.split(separator: ",").last ?? "")
-                : imageUrl
-
-            guard let imageData = Data(base64Encoded: cleanBase64, options: .ignoreUnknownCharacters) else {
-                print("Failed to decode image at index \(index)")
+        var comicPages: [ComicPageImage] = []
+        for page in response.pages {
+            guard let imageData = decodeBase64Image(page.image_url) else {
+                print("Failed to decode comic page \(page.page_number)")
                 continue
             }
-
-            let image = GeneratedDreamImage(
-                imageData: imageData,
-                prompt: panelPrompt,
-                style: style,
-                sequenceIndex: index
-            )
-            images.append(image)
+            comicPages.append(ComicPageImage(imageData: imageData, pageNumber: page.page_number))
         }
 
-        guard !images.isEmpty else {
-            throw ImageGenerationError.noImagesGenerated
+        guard !comicPages.isEmpty else {
+            throw ImageGenerationError.creationFailed("Failed to decode comic page images")
         }
 
-        self.generatedImages = images
-        return images
+        progress = 1.0
+        return comicPages
     }
 
-    // MARK: - Local Image Generation (not authenticated)
+    // MARK: - Local Comic Page
 
-    private func generateLocally(text: String, style: DreamImageStyle) async throws -> [GeneratedDreamImage] {
+    private func generateComicPageLocally(
+        text: String,
+        style: DreamImageStyle,
+        dreamerProfile: DreamerProfile?
+    ) async throws -> [ComicPageImage] {
         // Load MLX model if needed
         if !mlxService.isModelLoaded {
             statusMessage = "Loading MLX model..."
             try await mlxService.loadModel()
         }
 
-        // Phase 1: Generate scene descriptions using local AI
-        statusMessage = "Creating comic panels..."
+        // Step 1: Plan layout locally
+        statusMessage = "Planning comic layout..."
+        progress = 0.05
+
         let aiService = AIService()
-        let scenes: [String]
+        let layoutPlan: ComicLayoutPlan
 
         do {
-            let generatedScenes = try await aiService.generateComicScenes(from: text)
-            if generatedScenes.isEmpty {
-                scenes = generateFallbackScenes(count: 3)
-            } else {
-                scenes = generatedScenes
-            }
+            layoutPlan = try await aiService.planComicLayoutLocally(
+                from: text,
+                dreamerProfile: dreamerProfile
+            )
         } catch {
-            print("AI scene generation failed: \(error), using fallback")
-            scenes = generateFallbackScenes(count: 3)
+            print("Local layout planning failed: \(error), using default 2x2 layout")
+            layoutPlan = createDefaultLayoutPlan(from: text)
         }
 
         if isCancelled { throw ImageGenerationError.cancelled }
 
-        // Phase 2: Render images locally using MLX
-        statusMessage = "Generating \(scenes.count) images..."
-        let mlxImages = try await mlxService.generateComicSequence(
-            scenes: scenes,
-            style: style.mlxStyle
-        )
+        var comicPages: [ComicPageImage] = []
+        let comicLayout = layoutPlan.layout
 
-        let images = mlxImages.map { GeneratedDreamImage(from: $0) }
-        self.generatedImages = images
+        for (pageIndex, pagePlan) in comicLayout.pages.enumerated() {
+            // Step 2: Generate panel images with MLX
+            var panelImages: [UIImage] = []
 
-        if images.isEmpty { throw ImageGenerationError.noImagesGenerated }
-        return images
+            for (panelIndex, panelPlan) in pagePlan.panels.enumerated() {
+                if isCancelled { throw ImageGenerationError.cancelled }
+
+                let totalPanels = pagePlan.panels.count
+                statusMessage = "Rendering panel \(panelIndex + 1)/\(totalPanels)..."
+                progress = 0.1 + 0.7 * Double(panelIndex + 1) / Double(totalPanels)
+
+                let sanitizedPrompt = aiService.sanitizeScenePromptPublic(panelPlan.image_prompt)
+
+                do {
+                    let mlxImage = try await mlxService.generateImage(
+                        prompt: sanitizedPrompt,
+                        style: style.mlxStyle,
+                        sequenceIndex: panelIndex
+                    )
+                    if let uiImage = UIImage(data: mlxImage.imageData) {
+                        panelImages.append(uiImage)
+                    }
+                } catch {
+                    print("Failed to render panel \(panelIndex): \(error)")
+                }
+            }
+
+            if isCancelled { throw ImageGenerationError.cancelled }
+
+            // Step 3: Composite
+            statusMessage = "Compositing page..."
+            progress = 0.85
+
+            guard let composedImage = ComicPageCompositor.composePage(
+                panelImages: panelImages,
+                pagePlan: pagePlan,
+                layoutType: comicLayout.layout_type,
+                titleText: pageIndex == 0 ? comicLayout.title_text : nil
+            ) else { continue }
+
+            guard let pngData = composedImage.pngData() else { continue }
+
+            comicPages.append(ComicPageImage(imageData: pngData, pageNumber: pageIndex))
+        }
+
+        progress = 1.0
+
+        guard !comicPages.isEmpty else {
+            throw ImageGenerationError.noImagesGenerated
+        }
+
+        return comicPages
     }
 
-    /// Legacy method for backward compatibility (numberOfImages is ignored - AI decides)
-    func generateSequenceImages(
-        from text: String,
-        style: DreamImageStyle,
-        numberOfImages: Int
-    ) async throws -> [GeneratedDreamImage] {
-        // Ignore numberOfImages - AI Visual Director decides based on story
-        return try await generateSequenceImages(from: text, style: style)
+    // MARK: - Helpers
+
+    /// Create a default 2x2 layout plan when local AI planning fails
+    private func createDefaultLayoutPlan(from text: String) -> ComicLayoutPlan {
+        let scenes = generateFallbackScenes(count: 4)
+        return ComicLayoutPlan(
+            model_used: "fallback",
+            layout: ComicLayout(
+                title_text: "DREAM",
+                layout_type: "2x2_grid",
+                pages: [
+                    ComicPagePlan(
+                        page_number: 1,
+                        panels: scenes.enumerated().map { index, prompt in
+                            ComicPanelPlan(
+                                panel_number: index + 1,
+                                position: PanelPosition(row: index / 2, col: index % 2),
+                                size: "standard",
+                                image_prompt: prompt,
+                                speech_bubble: nil,
+                                sound_effect: nil,
+                                narrative_caption: "Scene \(index + 1)"
+                            )
+                        }
+                    )
+                ]
+            )
+        )
+    }
+
+    /// Decode a base64 image URL (supports "data:image/png;base64,..." and raw base64)
+    private func decodeBase64Image(_ imageUrl: String) -> Data? {
+        let cleanBase64 = imageUrl.contains(",")
+            ? String(imageUrl.split(separator: ",").last ?? "")
+            : imageUrl
+        return Data(base64Encoded: cleanBase64, options: .ignoreUnknownCharacters)
     }
 
     /// Generate flat vector style fallback scenes

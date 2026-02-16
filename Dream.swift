@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 struct Dream: Identifiable, Codable {
     let id: UUID
@@ -8,6 +9,9 @@ struct Dream: Identifiable, Codable {
     var date: Date
     var generatedImages: [GeneratedDreamImage]?
     var imageStyle: String?
+    var comicPages: [ComicPageImage]?
+    var comicLayoutPlan: ComicLayoutPlan?
+    var includeAvatarInComic: Bool?
 
     init(originalText: String) {
         self.id = UUID()
@@ -17,6 +21,9 @@ struct Dream: Identifiable, Codable {
         self.date = Date()
         self.generatedImages = nil
         self.imageStyle = nil
+        self.comicPages = nil
+        self.comicLayoutPlan = nil
+        self.includeAvatarInComic = nil
     }
 
     var hasImages: Bool {
@@ -24,7 +31,36 @@ struct Dream: Identifiable, Codable {
         return !images.isEmpty
     }
 
+    var hasComicPages: Bool {
+        guard let pages = comicPages else { return false }
+        return !pages.isEmpty
+    }
+
     var sortedImages: [GeneratedDreamImage] {
         (generatedImages ?? []).sorted { $0.sequenceIndex < $1.sequenceIndex }
+    }
+
+    var sortedComicPages: [ComicPageImage] {
+        (comicPages ?? []).sorted { $0.pageNumber < $1.pageNumber }
+    }
+}
+
+// MARK: - Comic Page Image
+
+struct ComicPageImage: Identifiable, Codable, Equatable {
+    let id: UUID
+    let imageData: Data
+    let pageNumber: Int
+    let createdAt: Date
+
+    init(imageData: Data, pageNumber: Int) {
+        self.id = UUID()
+        self.imageData = imageData
+        self.pageNumber = pageNumber
+        self.createdAt = Date()
+    }
+
+    var uiImage: UIImage? {
+        UIImage(data: imageData)
     }
 }

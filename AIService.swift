@@ -141,7 +141,8 @@ class AIService {
         let moodType = mapToneToMoodType(tone)
         let response = try await BackendService.shared.rewriteDream(
             text: original,
-            moodType: moodType
+            moodType: moodType,
+            dreamerProfile: AuthManager.shared.dreamerProfile
         )
         return response.rewritten_text
     }
@@ -249,6 +250,152 @@ class AIService {
         default:
             return "Create a peaceful, uplifting narrative that brings comfort and emotional safety."
         }
+    }
+
+    // MARK: - Comic Layout Planning (Local)
+
+    /// Plan a comic page layout locally using Foundation Models
+    /// Returns a ComicLayoutPlan suitable for ComicPageCompositor
+    func planComicLayoutLocally(
+        from storyText: String,
+        dreamerProfile: DreamerProfile? = nil
+    ) async throws -> ComicLayoutPlan {
+        if #available(iOS 26.0, *), Self.isOnDeviceAvailable {
+            return try await planLayoutWithFoundationModels(from: storyText, dreamerProfile: dreamerProfile)
+        }
+        throw AIServiceError.notSupported
+    }
+
+    @available(iOS 26.0, *)
+    private func planLayoutWithFoundationModels(
+        from storyText: String,
+        dreamerProfile: DreamerProfile?
+    ) async throws -> ComicLayoutPlan {
+        var systemInstructions = """
+        You are a comic book art director. Given a dream story, plan a comic page layout.
+
+        RULES:
+        - Most dreams fit on ONE page with 3-4 panels
+        - Choose from layouts: "single_splash" (1 panel), "vertical_strip" (2-3), "2x2_grid" (4), "dynamic" (3-5)
+        - Include speech bubbles sparingly for key emotional moments
+        - Include sound effects (WHOOSH, CRACK, BOOM) where dramatic
+
+        PANEL PROMPT RULES:
+        - Each prompt must be a complete image description
+        - Use comic book visual language: dynamic angles, bold colors
+        - Include the style keywords: flat vector comic panel, thick black outlines, simple geometric shapes
+        - Do NOT include human faces or realistic people — use silhouette characters
+        """
+
+        if let profile = dreamerProfile {
+            if let gender = profile.gender, let age = profile.age {
+                systemInstructions += "\n\nThe dreamer is a \(age)-year-old \(gender). Use a silhouette matching this description."
+            }
+        }
+
+        let session = LanguageModelSession(instructions: systemInstructions)
+
+        let prompt = """
+        Plan a comic page for this dream story:
+        "\(storyText)"
+
+        Output ONLY valid JSON in this exact format:
+        {
+          "title_text": "SHORT TITLE",
+          "layout": "2x2_grid",
+          "panels": [
+            {
+              "panel": 1,
+              "position": "top-left",
+              "size": "standard",
+              "story_part": "Opening",
+              "prompt": "flat vector comic panel, ...",
+              "speech_bubble": null,
+              "sound_effect": null
+            }
+          ]
+        }
+        """
+
+        let response = try await session.respond(to: prompt)
+        return parseLocalLayoutPlan(response.content)
+    }
+
+    private func parseLocalLayoutPlan(_ response: String) -> ComicLayoutPlan {
+        var jsonString = response.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if jsonString.hasPrefix("```json") { jsonString = String(jsonString.dropFirst(7)) }
+        else if jsonString.hasPrefix("```") { jsonString = String(jsonString.dropFirst(3)) }
+        if jsonString.hasSuffix("```") { jsonString = String(jsonString.dropLast(3)) }
+        jsonString = jsonString.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if let data = jsonString.data(using: .utf8),
+           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let panels = json["panels"] as? [[String: Any]] {
+
+            let titleText = json["title_text"] as? String
+            let layoutType = json["layout"] as? String ?? "2x2_grid"
+
+            let panelPlans: [ComicPanelPlan] = panels.enumerated().compactMap { index, panel in
+                guard let prompt = panel["prompt"] as? String else { return nil }
+                return ComicPanelPlan(
+                    panel_number: panel["panel"] as? Int ?? (index + 1),
+                    position: PanelPosition(row: index / 2, col: index % 2),
+                    size: panel["size"] as? String ?? "standard",
+                    image_prompt: prompt,
+                    speech_bubble: panel["speech_bubble"] as? String,
+                    sound_effect: panel["sound_effect"] as? String,
+                    narrative_caption: panel["story_part"] as? String
+                )
+            }
+
+            guard !panelPlans.isEmpty else {
+                return createFallbackLayoutPlan()
+            }
+
+            return ComicLayoutPlan(
+                model_used: "foundation_models",
+                layout: ComicLayout(
+                    title_text: titleText,
+                    layout_type: layoutType,
+                    pages: [
+                        ComicPagePlan(
+                            page_number: 1,
+                            panels: panelPlans
+                        )
+                    ]
+                )
+            )
+        }
+
+        return createFallbackLayoutPlan()
+    }
+
+    private func createFallbackLayoutPlan() -> ComicLayoutPlan {
+        let vectorStyle = "flat vector comic panel, graphic design style, thick black vector outlines, simple geometric shapes, solid flat colors only, high contrast color blocks, symbolic silhouette characters, screen print look"
+        return ComicLayoutPlan(
+            model_used: "fallback",
+            layout: ComicLayout(
+                title_text: "DREAM",
+                layout_type: "2x2_grid",
+                pages: [
+                    ComicPagePlan(
+                        page_number: 1,
+                        panels: [
+                            ComicPanelPlan(panel_number: 1, position: PanelPosition(row: 0, col: 0), size: "standard", image_prompt: "Silhouette figure at edge of glowing forest, warm golden light, \(vectorStyle)", speech_bubble: nil, sound_effect: nil, narrative_caption: "Opening"),
+                            ComicPanelPlan(panel_number: 2, position: PanelPosition(row: 0, col: 1), size: "standard", image_prompt: "Dark cave entrance with mysterious blue glow, \(vectorStyle)", speech_bubble: nil, sound_effect: "WHOOSH", narrative_caption: "Discovery"),
+                            ComicPanelPlan(panel_number: 3, position: PanelPosition(row: 1, col: 0), size: "standard", image_prompt: "Lightning bolt across purple sky, mountain silhouette, \(vectorStyle)", speech_bubble: nil, sound_effect: "CRACK", narrative_caption: "Challenge"),
+                            ComicPanelPlan(panel_number: 4, position: PanelPosition(row: 1, col: 1), size: "standard", image_prompt: "Sunrise over calm lake, peaceful colors, rainbow arc, \(vectorStyle)", speech_bubble: nil, sound_effect: nil, narrative_caption: "Resolution")
+                        ]
+                    )
+                ]
+            )
+        )
+    }
+
+    /// Public wrapper for sanitizeScenePrompt, used by ImageGenerationService
+    func sanitizeScenePromptPublic(_ scene: String) -> String {
+        sanitizeScenePrompt(scene)
     }
 
     // MARK: - Comic Book Scene Generation

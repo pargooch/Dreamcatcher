@@ -178,7 +178,7 @@ class BackendService {
         try await sendVoid(request)
     }
 
-    func rewriteDream(text: String, moodType: String, model: String? = nil) async throws -> AIRewriteResponse {
+    func rewriteDream(text: String, moodType: String, model: String? = nil, dreamerProfile: DreamerProfile? = nil) async throws -> AIRewriteResponse {
         let url = try makeURL(path: "/ai/dream-rewrite")
         var body: [String: Any] = [
             "text": text,
@@ -186,6 +186,13 @@ class BackendService {
         ]
         if let model = model {
             body["model"] = model
+        }
+        if let profile = dreamerProfile {
+            var profileDict: [String: Any] = [:]
+            if let gender = profile.gender { profileDict["gender"] = gender }
+            if let age = profile.age { profileDict["age"] = age }
+            if let avatar = profile.avatar_description { profileDict["avatar_description"] = avatar }
+            body["dreamer_profile"] = profileDict
         }
         let data = try JSONSerialization.data(withJSONObject: body)
         let request = try makeRequest(url: url, method: "POST", body: data, requiresAuth: true)
@@ -269,26 +276,54 @@ class BackendService {
         }
     }
 
-    func generateImage(prompt: String) async throws -> AIGenerateImageResponse {
-        let url = try makeURL(path: "ai/generate-image")
-        let body: [String: Any] = [
-            "prompt": prompt
+    // MARK: - Single-Shot Comic Page Generation
+
+    /// One request → backend handles LLM layout + image generation → returns complete page(s)
+    func generateComicPage(rewrittenText: String, style: String, dreamerProfile: DreamerProfile? = nil) async throws -> ComicPageGenerationResponse {
+        let url = try makeURL(path: "ai/generate-comic-page")
+        var body: [String: Any] = [
+            "rewritten_text": rewrittenText,
+            "style": style
         ]
+        if let profile = dreamerProfile {
+            var profileDict: [String: Any] = [:]
+            if let gender = profile.gender { profileDict["gender"] = gender }
+            if let age = profile.age { profileDict["age"] = age }
+            if let avatar = profile.avatar_description { profileDict["avatar_description"] = avatar }
+            body["dreamer_profile"] = profileDict
+        }
         let data = try JSONSerialization.data(withJSONObject: body)
         let request = try makeRequest(url: url, method: "POST", body: data, requiresAuth: true)
-        return try await send(request, as: AIGenerateImageResponse.self)
+        return try await send(request, as: ComicPageGenerationResponse.self)
     }
 
-    func generateImages(prompt: String, style: String, numberOfPanels: Int) async throws -> AIGenerateImagesResponse {
-        let url = try makeURL(path: "ai/generate-images")
-        let body: [String: Any] = [
-            "prompt": prompt,
-            "style": style,
-            "number_of_panels": numberOfPanels
-        ]
-        let data = try JSONSerialization.data(withJSONObject: body)
-        let request = try makeRequest(url: url, method: "POST", body: data, requiresAuth: true)
-        return try await send(request, as: AIGenerateImagesResponse.self)
+    // MARK: - Avatar
+
+    func uploadAvatar(imageData: Data) async throws -> AvatarResponse {
+        let url = try makeURL(path: "users/avatar")
+        let boundary = UUID().uuidString
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        if let token = authToken {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+
+        var body = Data()
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"avatar.png\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: image/png\r\n\r\n".data(using: .utf8)!)
+        body.append(imageData)
+        body.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+        request.httpBody = body
+
+        return try await send(request, as: AvatarResponse.self)
+    }
+
+    func deleteAvatar() async throws {
+        let url = try makeURL(path: "users/avatar")
+        let request = try makeRequest(url: url, method: "DELETE", requiresAuth: true)
+        try await sendVoid(request)
     }
 
     func getAIModels() async throws -> [AIModel] {

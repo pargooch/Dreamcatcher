@@ -39,13 +39,39 @@ class AuthManager: ObservableObject {
     var userId: String? {
         cloudUserId
     }
-    
+
+    /// Cached user profile (gender, age, timezone)
+    @Published var userProfile: UserProfile?
+
+    /// Avatar image data (cached locally)
+    private(set) var avatarImageData: Data?
+
+    /// AI-generated description of the user's avatar
+    private(set) var avatarDescription: String?
+
+    /// Convenience: build a DreamerProfile from cached user data
+    var dreamerProfile: DreamerProfile? {
+        guard let profile = userProfile,
+              profile.gender != nil || profile.age != nil || avatarDescription != nil else {
+            return nil
+        }
+        return DreamerProfile(
+            gender: profile.gender,
+            age: profile.age,
+            avatar_description: avatarDescription
+        )
+    }
+
     // MARK: - UserDefaults Keys
-    
+
     private let tokenKey = "authToken"
     private let userIdKey = "userId"
     private let emailKey = "userEmail"
     private let cloudEnabledKey = "isCloudEnabled"
+    private let genderKey = "userGender"
+    private let ageKey = "userAge"
+    private let timezoneKey = "userTimezone"
+    private let avatarDescriptionKey = "avatarDescription"
     
     // MARK: - Services
     
@@ -131,12 +157,22 @@ class AuthManager: ObservableObject {
         authToken = nil
         userEmail = nil
         cloudUserId = nil
+        userProfile = nil
+        avatarImageData = nil
+        avatarDescription = nil
         isAuthenticated = false
-        
+
         // Clear stored credentials
         UserDefaults.standard.removeObject(forKey: tokenKey)
         UserDefaults.standard.removeObject(forKey: userIdKey)
         UserDefaults.standard.removeObject(forKey: emailKey)
+        UserDefaults.standard.removeObject(forKey: genderKey)
+        UserDefaults.standard.removeObject(forKey: ageKey)
+        UserDefaults.standard.removeObject(forKey: timezoneKey)
+        UserDefaults.standard.removeObject(forKey: avatarDescriptionKey)
+
+        // Remove avatar file
+        clearAvatarFromDocuments()
     }
     
     /// Toggle cloud sync on/off
@@ -153,7 +189,18 @@ class AuthManager: ObservableObject {
         cloudUserId = UserDefaults.standard.string(forKey: userIdKey)
         userEmail = UserDefaults.standard.string(forKey: emailKey)
         isCloudEnabled = UserDefaults.standard.object(forKey: cloudEnabledKey) as? Bool ?? true
-        
+
+        // Restore cached profile
+        let gender = UserDefaults.standard.string(forKey: genderKey)
+        let age = UserDefaults.standard.object(forKey: ageKey) as? Int
+        let timezone = UserDefaults.standard.string(forKey: timezoneKey)
+        if gender != nil || age != nil || timezone != nil {
+            userProfile = UserProfile(gender: gender, age: age, timezone: timezone)
+        }
+
+        avatarDescription = UserDefaults.standard.string(forKey: avatarDescriptionKey)
+        loadAvatarFromDocuments()
+
         // Update authentication state
         isAuthenticated = authToken != nil && cloudUserId != nil
     }
@@ -166,7 +213,21 @@ class AuthManager: ObservableObject {
             self.cloudUserId = response.user._id
             self.userEmail = email
             self.isAuthenticated = true
-            
+
+            // Cache user profile
+            if let profile = response.user.profile {
+                self.userProfile = profile
+                if let gender = profile.gender {
+                    UserDefaults.standard.set(gender, forKey: genderKey)
+                }
+                if let age = profile.age {
+                    UserDefaults.standard.set(age, forKey: ageKey)
+                }
+                if let tz = profile.timezone {
+                    UserDefaults.standard.set(tz, forKey: timezoneKey)
+                }
+            }
+
             // Persist to UserDefaults
             UserDefaults.standard.set(response.token, forKey: tokenKey)
             UserDefaults.standard.set(response.user._id, forKey: userIdKey)
@@ -196,6 +257,43 @@ class AuthManager: ObservableObject {
                 self.error = error.localizedDescription
             }
         }
+    }
+
+    // MARK: - Avatar Management
+
+    /// Save avatar image and description
+    func setAvatar(imageData: Data, description: String) {
+        avatarImageData = imageData
+        avatarDescription = description
+        UserDefaults.standard.set(description, forKey: avatarDescriptionKey)
+        saveAvatarToDocuments(imageData)
+    }
+
+    /// Clear avatar data
+    func clearAvatar() {
+        avatarImageData = nil
+        avatarDescription = nil
+        UserDefaults.standard.removeObject(forKey: avatarDescriptionKey)
+        clearAvatarFromDocuments()
+    }
+
+    private var avatarFileURL: URL {
+        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        return docs.appendingPathComponent("avatar.png")
+    }
+
+    private func saveAvatarToDocuments(_ data: Data) {
+        try? data.write(to: avatarFileURL)
+    }
+
+    private func loadAvatarFromDocuments() {
+        if let data = try? Data(contentsOf: avatarFileURL) {
+            avatarImageData = data
+        }
+    }
+
+    private func clearAvatarFromDocuments() {
+        try? FileManager.default.removeItem(at: avatarFileURL)
     }
 }
 
