@@ -1,0 +1,270 @@
+import Foundation
+
+class BackendService {
+    static let shared = BackendService()
+
+    private let baseURL = URL(string: "https://dreamcatcher-api.percodice.it/api")!
+    private let session: URLSession
+
+    private init() {
+        let config = URLSessionConfiguration.default
+        session = URLSession(configuration: config)
+    }
+
+    private var authToken: String? {
+        AuthManager.shared.authToken
+    }
+
+    private func makeURL(path: String) throws -> URL {
+        guard let url = URL(string: path, relativeTo: baseURL) else {
+            throw BackendError.invalidURL
+        }
+        return url
+    }
+
+    private func makeRequest(url: URL, method: String, body: Data? = nil, requiresAuth: Bool = false) throws -> URLRequest {
+        var request = URLRequest(url: url)
+        request.httpMethod = method
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        if requiresAuth, let token = authToken {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        request.httpBody = body
+        return request
+    }
+
+    private func send<T: Decodable>(_ request: URLRequest, as type: T.Type) async throws -> T {
+        do {
+            let (data, response) = try await session.data(for: request)
+
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw BackendError.noData
+            }
+
+            switch httpResponse.statusCode {
+            case 200...299:
+                guard !data.isEmpty else {
+                    throw BackendError.noData
+                }
+                do {
+                    let decoder = JSONDecoder()
+                    return try decoder.decode(T.self, from: data)
+                } catch {
+                    throw BackendError.decodingError(error)
+                }
+            case 401:
+                throw BackendError.unauthorized
+            case 404:
+                throw BackendError.notFound("Resource not found")
+            case 409:
+                throw BackendError.conflict("Conflict with existing resource")
+            default:
+                let message = String(data: data, encoding: .utf8)
+                throw BackendError.serverError(statusCode: httpResponse.statusCode, message: message)
+            }
+        } catch let error as BackendError {
+            throw error
+        } catch {
+            throw BackendError.networkError(error)
+        }
+    }
+
+    private func sendVoid(_ request: URLRequest) async throws {
+        do {
+            let (_, response) = try await session.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw BackendError.noData
+            }
+            switch httpResponse.statusCode {
+            case 200...299:
+                return
+            case 401:
+                throw BackendError.unauthorized
+            case 404:
+                throw BackendError.notFound("Resource not found")
+            case 409:
+                throw BackendError.conflict("Conflict with existing resource")
+            default:
+                throw BackendError.serverError(statusCode: httpResponse.statusCode, message: nil)
+            }
+        } catch let error as BackendError {
+            throw error
+        } catch {
+            throw BackendError.networkError(error)
+        }
+    }
+
+    func register(email: String, password: String) async throws -> AuthResponse {
+        let url = try makeURL(path: "/api/auth/register")
+        let body: [String: Any] = [
+            "email": email,
+            "password": password
+        ]
+        let data = try JSONSerialization.data(withJSONObject: body)
+        let request = try makeRequest(url: url, method: "POST", body: data, requiresAuth: false)
+        return try await send(request, as: AuthResponse.self)
+    }
+
+    func register(email: String, password: String, profile: UserProfile) async throws -> AuthResponse {
+        let url = try makeURL(path: "/api/auth/register")
+        var profileDict: [String: Any] = [:]
+        if let gender = profile.gender { profileDict["gender"] = gender }
+        if let age = profile.age { profileDict["age"] = age }
+        if let timezone = profile.timezone { profileDict["timezone"] = timezone }
+
+        let body: [String: Any] = [
+            "email": email,
+            "password": password,
+            "profile": profileDict
+        ]
+        let data = try JSONSerialization.data(withJSONObject: body)
+        let request = try makeRequest(url: url, method: "POST", body: data, requiresAuth: false)
+        return try await send(request, as: AuthResponse.self)
+    }
+
+    func login(email: String, password: String) async throws -> AuthResponse {
+        let url = try makeURL(path: "/api/auth/login")
+        let body: [String: Any] = [
+            "email": email,
+            "password": password
+        ]
+        let data = try JSONSerialization.data(withJSONObject: body)
+        let request = try makeRequest(url: url, method: "POST", body: data, requiresAuth: false)
+        return try await send(request, as: AuthResponse.self)
+    }
+
+    func getDreams(userId: String?) async throws -> [APIDream] {
+        var components = URLComponents(url: try makeURL(path: "/dreams/"), resolvingAgainstBaseURL: true)
+        if let userId = userId {
+            components?.queryItems = [URLQueryItem(name: "user_id", value: userId)]
+        }
+        guard let url = components?.url else {
+            throw BackendError.invalidURL
+        }
+        let request = try makeRequest(url: url, method: "GET", requiresAuth: true)
+        return try await send(request, as: [APIDream].self)
+    }
+
+    func getDream(id: String) async throws -> APIDream {
+        let url = try makeURL(path: "/dreams/\(id)")
+        let request = try makeRequest(url: url, method: "GET", requiresAuth: true)
+        return try await send(request, as: APIDream.self)
+    }
+
+    func createDream(userId: String, originalText: String, title: String?) async throws -> APIDream {
+        let url = try makeURL(path: "/dreams/")
+        var body: [String: Any] = [
+            "user_id": userId,
+            "original_text": originalText
+        ]
+        if let title = title {
+            body["title"] = title
+        }
+        let data = try JSONSerialization.data(withJSONObject: body)
+        let request = try makeRequest(url: url, method: "POST", body: data, requiresAuth: true)
+        return try await send(request, as: APIDream.self)
+    }
+
+    func deleteDream(id: String) async throws {
+        let url = try makeURL(path: "/dreams/\(id)")
+        let request = try makeRequest(url: url, method: "DELETE", requiresAuth: true)
+        try await sendVoid(request)
+    }
+
+    func rewriteDream(dreamId: String, moodType: String, model: String? = nil) async throws -> APIRewrittenDream {
+        let url = try makeURL(path: "/ai/dream-rewrite")
+        var body: [String: Any] = [
+            "dream_id": dreamId,
+            "mood_type": moodType
+        ]
+        if let model = model {
+            body["model"] = model
+        }
+        let data = try JSONSerialization.data(withJSONObject: body)
+        let request = try makeRequest(url: url, method: "POST", body: data, requiresAuth: true)
+        return try await send(request, as: APIRewrittenDream.self)
+    }
+
+    func getRewrittenDreams(dreamId: String?) async throws -> [APIRewrittenDream] {
+        var components = URLComponents(url: try makeURL(path: "/rewritten-dreams/"), resolvingAgainstBaseURL: true)
+        if let dreamId = dreamId {
+            components?.queryItems = [URLQueryItem(name: "dream_id", value: dreamId)]
+        }
+        guard let url = components?.url else {
+            throw BackendError.invalidURL
+        }
+        let request = try makeRequest(url: url, method: "GET", requiresAuth: true)
+        return try await send(request, as: [APIRewrittenDream].self)
+    }
+
+    func getVisualizations(rewrittenDreamId: String?) async throws -> [APIVisualization] {
+        var components = URLComponents(url: try makeURL(path: "/visualizations/"), resolvingAgainstBaseURL: true)
+        if let rewrittenDreamId = rewrittenDreamId {
+            components?.queryItems = [URLQueryItem(name: "rewritten_dream_id", value: rewrittenDreamId)]
+        }
+        guard let url = components?.url else {
+            throw BackendError.invalidURL
+        }
+        let request = try makeRequest(url: url, method: "GET", requiresAuth: true)
+        return try await send(request, as: [APIVisualization].self)
+    }
+
+    func createVisualization(rewrittenDreamId: String, visualizationType: String, imageAssets: [String], status: String) async throws -> APIVisualization {
+        let url = try makeURL(path: "/visualizations/")
+        let body: [String: Any] = [
+            "rewritten_dream_id": rewrittenDreamId,
+            "visualization_type": visualizationType,
+            "image_assets": imageAssets,
+            "status": status
+        ]
+        let data = try JSONSerialization.data(withJSONObject: body)
+        let request = try makeRequest(url: url, method: "POST", body: data, requiresAuth: true)
+        return try await send(request, as: APIVisualization.self)
+    }
+
+    func updateVisualization(id: String, imageAssets: [String]?, status: String?) async throws -> APIVisualization {
+        let url = try makeURL(path: "/visualizations/\(id)")
+        var body: [String: Any] = [:]
+        if let imageAssets = imageAssets {
+            body["image_assets"] = imageAssets
+        }
+        if let status = status {
+            body["status"] = status
+        }
+        let data = try JSONSerialization.data(withJSONObject: body)
+        let request = try makeRequest(url: url, method: "PUT", body: data, requiresAuth: true)
+        return try await send(request, as: APIVisualization.self)
+    }
+
+    func uploadImage(data: Data, filename: String) async throws -> String {
+        let url = try makeURL(path: "/uploads/images")
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        if let token = authToken {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        request.httpBody = data
+
+        let (responseData, response) = try await session.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw BackendError.noData
+        }
+        switch httpResponse.statusCode {
+        case 200...299:
+            guard let urlString = String(data: responseData, encoding: .utf8), !urlString.isEmpty else {
+                throw BackendError.noData
+            }
+            return urlString
+        case 401:
+            throw BackendError.unauthorized
+        default:
+            throw BackendError.serverError(statusCode: httpResponse.statusCode, message: nil)
+        }
+    }
+
+    func getAIModels() async throws -> [AIModel] {
+        let url = try makeURL(path: "/ai/models")
+        let request = try makeRequest(url: url, method: "GET", requiresAuth: true)
+        return try await send(request, as: [AIModel].self)
+    }
+}

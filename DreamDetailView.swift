@@ -915,3 +915,41 @@ struct DreamImageGalleryView: View {
         }
     }
 }
+
+struct SignUpPromptBanner: View {
+    @Binding var isVisible: Bool
+
+    var body: some View {
+        if isVisible {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "cloud.fill")
+                    .foregroundColor(.accentColor)
+                    .font(.title3)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Save your dream journeys in the cloud")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                    Text("Sign up to back up rewrites and visualizations across devices.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+                Spacer()
+
+                Button {
+                    isVisible = false
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Color(.systemGray6))
+            )
+        }
+    }
+}

@@ -49,6 +49,7 @@ enum AIProvider: String {
 
 class AIService {
     private var currentTask: Task<Void, Never>?
+    private static let backendBaseURL = URL(string: "https://dreamcatcher-api.percodice.it/api")!
 
     /// Check if Apple Foundation Models is available
     @available(iOS 26.0, *)
@@ -276,17 +277,67 @@ class AIService {
     /// Generate comic-book style scene descriptions for image generation
     /// Panel count is determined automatically based on story complexity (1-4 panels)
     func generateComicScenes(from storyText: String) async throws -> [String] {
+        if Self.canUseBackend {
+            do {
+                return try await generateScenesWithBackend(from: storyText)
+            } catch {
+                print("Backend comic scene generation failed: \(error), falling back to on-device")
+            }
+        }
+
         if #available(iOS 26.0, *), Self.isOnDeviceAvailable {
             return try await generateScenesWithFoundationModels(from: storyText)
-        } else {
-            throw AIServiceError.notSupported
         }
+
+        throw AIServiceError.notSupported
     }
 
     /// Legacy method for backward compatibility
     func generateComicScenes(from storyText: String, numberOfScenes: Int) async throws -> [String] {
         // Ignore numberOfScenes - AI decides based on story complexity
         return try await generateComicScenes(from: storyText)
+    }
+
+    private func generateScenesWithBackend(from storyText: String) async throws -> [String] {
+        guard let token = AuthManager.shared.authToken else {
+            throw AIServiceError.notSupported
+        }
+
+        let url = Self.backendBaseURL.appendingPathComponent("ai/generate-images")
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        let body: [String: Any] = [
+            "story": storyText
+        ]
+
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw AIServiceError.invalidResponse
+        }
+
+        guard (200...299).contains(httpResponse.statusCode) else {
+            if httpResponse.statusCode == 401 {
+                throw AIServiceError.invalidAPIKey
+            }
+            throw AIServiceError.serverError(statusCode: httpResponse.statusCode)
+        }
+
+        guard let content = String(data: data, encoding: .utf8), !content.isEmpty else {
+            throw AIServiceError.emptyResponse
+        }
+
+        let scenes = parseVisualDirectorResponse(content)
+        if scenes.isEmpty {
+            throw AIServiceError.emptyResponse
+        }
+
+        return scenes.map { sanitizeScenePrompt($0) }
     }
 
     @available(iOS 26.0, *)
@@ -867,4 +918,3 @@ class AIService {
         return scenes
     }
 }
-

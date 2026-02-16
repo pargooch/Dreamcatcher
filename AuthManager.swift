@@ -80,6 +80,29 @@ class AuthManager: ObservableObject {
             isLoading = false
         }
     }
+
+    /// Sign up a new user with profile details
+    /// - Parameters:
+    ///   - email: User's email address
+    ///   - password: User's password
+    ///   - profile: User profile (gender, age, timezone)
+    func signUp(email: String, password: String, profile: UserProfile) async {
+        await MainActor.run {
+            isLoading = true
+            error = nil
+        }
+
+        do {
+            let response = try await backendService.register(email: email, password: password, profile: profile)
+            await handleAuthSuccess(response: response, email: email)
+        } catch {
+            await handleAuthError(error)
+        }
+
+        await MainActor.run {
+            isLoading = false
+        }
+    }
     
     /// Login an existing user
     /// - Parameters:
