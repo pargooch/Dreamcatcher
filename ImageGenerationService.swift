@@ -118,9 +118,9 @@ class ImageGenerationService: ObservableObject {
     private var currentTask: Task<Void, Never>?
     private let mlxService = MLXImageService.shared
 
-    /// Check if MLX is available
+    /// Check if image generation is available (backend when authenticated, MLX when not)
     static var isAvailable: Bool {
-        return MLXImageService.isAvailable
+        return AuthManager.shared.isAuthenticated || MLXImageService.isAvailable
     }
 
     init() {
@@ -153,8 +153,9 @@ class ImageGenerationService: ObservableObject {
         isGenerating = false
     }
 
-    /// Generate sequence images from a rewritten dream using MLX
-    /// Panel count is automatically determined by AI based on story complexity (1-4 panels)
+    /// Generate sequence images from a rewritten dream
+    /// When authenticated: fully backend (images generated server-side)
+    /// When not authenticated: fully local (AI prompts + MLX rendering)
     func generateSequenceImages(
         from text: String,
         style: DreamImageStyle
@@ -170,60 +171,112 @@ class ImageGenerationService: ObservableObject {
         isCancelled = false
         progress = 0
         generatedImages = []
-        statusMessage = "Analyzing story..."
 
         defer {
             isGenerating = false
             statusMessage = ""
         }
 
-        // Check if model is loaded
+        if AuthManager.shared.isAuthenticated {
+            return try await generateWithBackend(text: text, style: style)
+        } else {
+            return try await generateLocally(text: text, style: style)
+        }
+    }
+
+    // MARK: - Backend Image Generation (authenticated)
+
+    private func generateWithBackend(text: String, style: DreamImageStyle) async throws -> [GeneratedDreamImage] {
+        // Step 1: Get panel prompts (text descriptions) from backend
+        statusMessage = "Creating comic panels..."
+
+        let response = try await BackendService.shared.generateImages(
+            prompt: text,
+            style: style.rawValue,
+            numberOfPanels: 4
+        )
+
+        if isCancelled { throw ImageGenerationError.cancelled }
+
+        guard !response.panel_prompts.isEmpty else {
+            throw ImageGenerationError.noImagesGenerated
+        }
+
+        // Step 2: Render each panel prompt into an image via backend
+        var images: [GeneratedDreamImage] = []
+        let totalPanels = response.panel_prompts.count
+
+        for (index, panelPrompt) in response.panel_prompts.enumerated() {
+            if isCancelled { throw ImageGenerationError.cancelled }
+
+            statusMessage = "Generating image \(index + 1)/\(totalPanels)..."
+            progress = Double(index + 1) / Double(totalPanels)
+
+            let imageResponse = try await BackendService.shared.generateImage(prompt: panelPrompt)
+
+            // Decode base64 from image_url (format: "data:image/png;base64,...")
+            let imageUrl = imageResponse.image_url
+            let cleanBase64 = imageUrl.contains(",")
+                ? String(imageUrl.split(separator: ",").last ?? "")
+                : imageUrl
+
+            guard let imageData = Data(base64Encoded: cleanBase64, options: .ignoreUnknownCharacters) else {
+                print("Failed to decode image at index \(index)")
+                continue
+            }
+
+            let image = GeneratedDreamImage(
+                imageData: imageData,
+                prompt: panelPrompt,
+                style: style,
+                sequenceIndex: index
+            )
+            images.append(image)
+        }
+
+        guard !images.isEmpty else {
+            throw ImageGenerationError.noImagesGenerated
+        }
+
+        self.generatedImages = images
+        return images
+    }
+
+    // MARK: - Local Image Generation (not authenticated)
+
+    private func generateLocally(text: String, style: DreamImageStyle) async throws -> [GeneratedDreamImage] {
+        // Load MLX model if needed
         if !mlxService.isModelLoaded {
             statusMessage = "Loading MLX model..."
             try await mlxService.loadModel()
         }
 
-        // Phase 1: Generate MLX-compatible scene descriptions using AI Visual Director
-        // AI decides how many panels (1-4) based on story complexity
-        print("AI Visual Director analyzing story...")
+        // Phase 1: Generate scene descriptions using local AI
         statusMessage = "Creating comic panels..."
-
         let aiService = AIService()
         let scenes: [String]
 
         do {
             let generatedScenes = try await aiService.generateComicScenes(from: text)
-
-            // Validate and fallback if needed
             if generatedScenes.isEmpty {
-                print("AI scene generation returned empty, using fallback")
                 scenes = generateFallbackScenes(count: 3)
             } else {
-                // Use whatever the AI decided (1-4 panels)
                 scenes = generatedScenes
-                print("AI Visual Director decided on \(scenes.count) panels")
             }
         } catch {
             print("AI scene generation failed: \(error), using fallback")
             scenes = generateFallbackScenes(count: 3)
         }
 
-        print("Generated \(scenes.count) comic panel prompts:")
-        for (i, scene) in scenes.enumerated() {
-            print("  Panel \(i + 1): \(scene.prefix(100))...")
-        }
-
         if isCancelled { throw ImageGenerationError.cancelled }
 
-        // Phase 2: Generate images using MLX
+        // Phase 2: Render images locally using MLX
         statusMessage = "Generating \(scenes.count) images..."
-
         let mlxImages = try await mlxService.generateComicSequence(
             scenes: scenes,
             style: style.mlxStyle
         )
 
-        // Convert to GeneratedDreamImage
         let images = mlxImages.map { GeneratedDreamImage(from: $0) }
         self.generatedImages = images
 

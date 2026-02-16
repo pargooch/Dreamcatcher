@@ -71,6 +71,21 @@ struct AIModel: Codable {
     let description: String?
 }
 
+struct AIRewriteResponse: Codable {
+    let rewritten_text: String
+    let model_used: String
+}
+
+struct AIGenerateImagesResponse: Codable {
+    let model_used: String
+    let panel_prompts: [String]
+    let status: String
+}
+
+struct AIGenerateImageResponse: Codable {
+    let image_url: String
+}
+
 enum BackendError: LocalizedError {
     case invalidURL
     case networkError(Error)

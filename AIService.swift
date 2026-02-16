@@ -49,7 +49,6 @@ enum AIProvider: String {
 
 class AIService {
     private var currentTask: Task<Void, Never>?
-    private static let backendBaseURL = URL(string: "https://dreamcatcher-api.percodice.it/api")!
 
     /// Check if Apple Foundation Models is available
     @available(iOS 26.0, *)
@@ -98,19 +97,12 @@ class AIService {
     // MARK: - Dream Rewrite (Async)
 
     /// Rewrite a dream with the specified tone
-    /// Uses backend if signed in, falls back to on-device
+    /// Uses backend exclusively when authenticated, local exclusively when not
     func rewriteDream(original: String, tone: String) async throws -> String {
-        // Try backend first if authenticated
         if Self.canUseBackend {
-            do {
-                return try await rewriteWithBackend(original: original, tone: tone)
-            } catch {
-                print("Backend rewrite failed: \(error), falling back to on-device")
-                // Fall through to on-device
-            }
+            return try await rewriteWithBackend(original: original, tone: tone)
         }
 
-        // Try on-device
         if #available(iOS 26.0, *), Self.isOnDeviceAvailable {
             return try await rewriteWithFoundationModelsAsync(original: original, tone: tone)
         }
@@ -146,25 +138,12 @@ class AIService {
     // MARK: - Backend Implementation
 
     private func rewriteWithBackend(original: String, tone: String) async throws -> String {
-        guard let userId = AuthManager.shared.userId else {
-            throw AIServiceError.notSupported
-        }
-
-        // Step 1: Create dream on backend
-        let apiDream = try await BackendService.shared.createDream(
-            userId: userId,
-            originalText: original,
-            title: "Dream"
-        )
-
-        // Step 2: Request AI rewrite with mood
         let moodType = mapToneToMoodType(tone)
-        let rewrittenDream = try await BackendService.shared.rewriteDream(
-            dreamId: apiDream._id,
+        let response = try await BackendService.shared.rewriteDream(
+            text: original,
             moodType: moodType
         )
-
-        return rewrittenDream.rewritten_text
+        return response.rewritten_text
     }
 
     /// Map app tone names to backend mood_type values
@@ -274,17 +253,10 @@ class AIService {
 
     // MARK: - Comic Book Scene Generation
 
-    /// Generate comic-book style scene descriptions for image generation
+    /// Generate comic-book style scene descriptions for local image generation
     /// Panel count is determined automatically based on story complexity (1-4 panels)
+    /// Only used in the local (unauthenticated) path — backend images are handled by ImageGenerationService directly
     func generateComicScenes(from storyText: String) async throws -> [String] {
-        if Self.canUseBackend {
-            do {
-                return try await generateScenesWithBackend(from: storyText)
-            } catch {
-                print("Backend comic scene generation failed: \(error), falling back to on-device")
-            }
-        }
-
         if #available(iOS 26.0, *), Self.isOnDeviceAvailable {
             return try await generateScenesWithFoundationModels(from: storyText)
         }
@@ -296,48 +268,6 @@ class AIService {
     func generateComicScenes(from storyText: String, numberOfScenes: Int) async throws -> [String] {
         // Ignore numberOfScenes - AI decides based on story complexity
         return try await generateComicScenes(from: storyText)
-    }
-
-    private func generateScenesWithBackend(from storyText: String) async throws -> [String] {
-        guard let token = AuthManager.shared.authToken else {
-            throw AIServiceError.notSupported
-        }
-
-        let url = Self.backendBaseURL.appendingPathComponent("ai/generate-images")
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-
-        let body: [String: Any] = [
-            "story": storyText
-        ]
-
-        request.httpBody = try JSONSerialization.data(withJSONObject: body)
-
-        let (data, response) = try await URLSession.shared.data(for: request)
-
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw AIServiceError.invalidResponse
-        }
-
-        guard (200...299).contains(httpResponse.statusCode) else {
-            if httpResponse.statusCode == 401 {
-                throw AIServiceError.invalidAPIKey
-            }
-            throw AIServiceError.serverError(statusCode: httpResponse.statusCode)
-        }
-
-        guard let content = String(data: data, encoding: .utf8), !content.isEmpty else {
-            throw AIServiceError.emptyResponse
-        }
-
-        let scenes = parseVisualDirectorResponse(content)
-        if scenes.isEmpty {
-            throw AIServiceError.emptyResponse
-        }
-
-        return scenes.map { sanitizeScenePrompt($0) }
     }
 
     @available(iOS 26.0, *)

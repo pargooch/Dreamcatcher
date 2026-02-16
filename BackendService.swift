@@ -3,7 +3,13 @@ import Foundation
 class BackendService {
     static let shared = BackendService()
 
-    private let baseURL = URL(string: "https://dreamcatcher-api.percodice.it/api")!
+    private let baseURL: URL = {
+        #if DEBUG
+        return URL(string: "http://localhost:3002/api/")!
+        #else
+        return URL(string: "https://dreamcatcher-api.percodice.it/api/")!
+        #endif
+    }()
     private let session: URLSession
 
     private init() {
@@ -16,7 +22,8 @@ class BackendService {
     }
 
     private func makeURL(path: String) throws -> URL {
-        guard let url = URL(string: path, relativeTo: baseURL) else {
+        let relativePath = path.hasPrefix("/") ? String(path.dropFirst()) : path
+        guard let url = URL(string: relativePath, relativeTo: baseURL) else {
             throw BackendError.invalidURL
         }
         return url
@@ -95,7 +102,7 @@ class BackendService {
     }
 
     func register(email: String, password: String) async throws -> AuthResponse {
-        let url = try makeURL(path: "/api/auth/register")
+        let url = try makeURL(path: "auth/register")
         let body: [String: Any] = [
             "email": email,
             "password": password
@@ -106,7 +113,7 @@ class BackendService {
     }
 
     func register(email: String, password: String, profile: UserProfile) async throws -> AuthResponse {
-        let url = try makeURL(path: "/api/auth/register")
+        let url = try makeURL(path: "auth/register")
         var profileDict: [String: Any] = [:]
         if let gender = profile.gender { profileDict["gender"] = gender }
         if let age = profile.age { profileDict["age"] = age }
@@ -123,7 +130,7 @@ class BackendService {
     }
 
     func login(email: String, password: String) async throws -> AuthResponse {
-        let url = try makeURL(path: "/api/auth/login")
+        let url = try makeURL(path: "auth/login")
         let body: [String: Any] = [
             "email": email,
             "password": password
@@ -171,10 +178,10 @@ class BackendService {
         try await sendVoid(request)
     }
 
-    func rewriteDream(dreamId: String, moodType: String, model: String? = nil) async throws -> APIRewrittenDream {
+    func rewriteDream(text: String, moodType: String, model: String? = nil) async throws -> AIRewriteResponse {
         let url = try makeURL(path: "/ai/dream-rewrite")
         var body: [String: Any] = [
-            "dream_id": dreamId,
+            "text": text,
             "mood_type": moodType
         ]
         if let model = model {
@@ -182,7 +189,7 @@ class BackendService {
         }
         let data = try JSONSerialization.data(withJSONObject: body)
         let request = try makeRequest(url: url, method: "POST", body: data, requiresAuth: true)
-        return try await send(request, as: APIRewrittenDream.self)
+        return try await send(request, as: AIRewriteResponse.self)
     }
 
     func getRewrittenDreams(dreamId: String?) async throws -> [APIRewrittenDream] {
@@ -260,6 +267,28 @@ class BackendService {
         default:
             throw BackendError.serverError(statusCode: httpResponse.statusCode, message: nil)
         }
+    }
+
+    func generateImage(prompt: String) async throws -> AIGenerateImageResponse {
+        let url = try makeURL(path: "ai/generate-image")
+        let body: [String: Any] = [
+            "prompt": prompt
+        ]
+        let data = try JSONSerialization.data(withJSONObject: body)
+        let request = try makeRequest(url: url, method: "POST", body: data, requiresAuth: true)
+        return try await send(request, as: AIGenerateImageResponse.self)
+    }
+
+    func generateImages(prompt: String, style: String, numberOfPanels: Int) async throws -> AIGenerateImagesResponse {
+        let url = try makeURL(path: "ai/generate-images")
+        let body: [String: Any] = [
+            "prompt": prompt,
+            "style": style,
+            "number_of_panels": numberOfPanels
+        ]
+        let data = try JSONSerialization.data(withJSONObject: body)
+        let request = try makeRequest(url: url, method: "POST", body: data, requiresAuth: true)
+        return try await send(request, as: AIGenerateImagesResponse.self)
     }
 
     func getAIModels() async throws -> [AIModel] {
