@@ -14,6 +14,7 @@ struct DreamDetailView: View {
     @State private var editedText = ""
     @State private var isEditingOriginal = false
     @State private var editedOriginalText = ""
+    @State private var ttsService = TextToSpeechService()
 
     let tones = ["happy", "funny", "hopeful", "calm", "positive"]
 
@@ -125,6 +126,17 @@ struct DreamDetailView: View {
                                 Text(rewritten)
                                     .font(ComicTheme.Typography.speechBubble())
                                     .speechBubble()
+
+                                Button {
+                                    ttsService.speak(rewritten)
+                                } label: {
+                                    Label(
+                                        ttsService.isSpeaking ? "Stop" : "Play Story",
+                                        systemImage: ttsService.isSpeaking ? "stop.fill" : "play.fill"
+                                    )
+                                }
+                                .buttonStyle(.comicSecondary(color: ComicTheme.Colors.emeraldGreen))
+                                .accessibilityHint(ttsService.isSpeaking ? "Tap to stop reading the story" : "Tap to hear the story read aloud")
                             }
                         }
                     }
@@ -216,6 +228,7 @@ struct DreamDetailView: View {
         }
         .onDisappear {
             aiService.cancel()
+            ttsService.stop()
         }
     }
 

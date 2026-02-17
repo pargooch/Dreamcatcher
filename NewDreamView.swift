@@ -5,6 +5,7 @@ struct NewDreamView: View {
     @Environment(\.dismiss) var dismiss
 
     @State private var dreamText = ""
+    @State private var speechService = SpeechRecognitionService()
 
     var body: some View {
         NavigationView {
@@ -17,7 +18,7 @@ struct NewDreamView: View {
 
                     ComicPanelCard(bannerColor: ComicTheme.Colors.deepPurple) {
                         ZStack(alignment: .topLeading) {
-                            if dreamText.isEmpty {
+                            if dreamText.isEmpty && !speechService.isRecording {
                                 Text("Describe your dream or nightmare...")
                                     .foregroundColor(.secondary)
                                     .padding(.top, 8)
@@ -28,6 +29,41 @@ struct NewDreamView: View {
                                 .scrollContentBackground(.hidden)
                                 .frame(minHeight: 200)
                         }
+                    }
+
+                    // Voice recording button
+                    Button {
+                        if speechService.isRecording {
+                            speechService.stopRecording()
+                        } else {
+                            Task {
+                                speechService.transcribedText = ""
+                                await speechService.startRecording()
+                            }
+                        }
+                    } label: {
+                        Label(
+                            speechService.isRecording ? "Stop Recording" : "Record Dream",
+                            systemImage: speechService.isRecording ? "stop.circle.fill" : "mic.circle.fill"
+                        )
+                    }
+                    .buttonStyle(.comicPrimary(color: speechService.isRecording ? ComicTheme.Colors.crimsonRed : ComicTheme.Colors.deepPurple))
+                    .accessibilityHint(speechService.isRecording ? "Tap to stop voice recording" : "Tap to start describing your dream with your voice")
+
+                    if speechService.isRecording {
+                        HStack(spacing: 8) {
+                            PulsingDot()
+                            Text("Listening...")
+                                .font(ComicTheme.Typography.speechBubble(13))
+                                .foregroundColor(.secondary)
+                        }
+                    }
+
+                    if let error = speechService.error {
+                        Text(error)
+                            .font(ComicTheme.Typography.speechBubble(12))
+                            .foregroundColor(ComicTheme.Colors.crimsonRed)
+                            .speechBubble()
                     }
 
                     Button {
@@ -54,6 +90,30 @@ struct NewDreamView: View {
                     .fontWeight(.bold)
                 }
             }
+            .onChange(of: speechService.transcribedText) { _, newValue in
+                if !newValue.isEmpty {
+                    dreamText = newValue
+                }
+            }
+            .onDisappear {
+                speechService.stopRecording()
+            }
         }
+    }
+}
+
+// MARK: - Pulsing Recording Indicator
+
+private struct PulsingDot: View {
+    @State private var isPulsing = false
+
+    var body: some View {
+        Circle()
+            .fill(ComicTheme.Colors.crimsonRed)
+            .frame(width: 10, height: 10)
+            .scaleEffect(isPulsing ? 1.3 : 1.0)
+            .opacity(isPulsing ? 0.6 : 1.0)
+            .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: isPulsing)
+            .onAppear { isPulsing = true }
     }
 }
