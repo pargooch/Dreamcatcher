@@ -152,7 +152,7 @@ struct DreamDetailView: View {
 
                         if isLoading {
                             VStack(spacing: 12) {
-                                SoundEffectText(text: "REWRITING!", fillColor: ComicTheme.Colors.boldBlue, fontSize: 20)
+                                SoundEffectText(text: "Narrating!", fillColor: ComicTheme.Colors.boldBlue, fontSize: 20)
 
                                 ProgressView()
                                     .tint(ComicTheme.Colors.boldBlue)
@@ -169,7 +169,7 @@ struct DreamDetailView: View {
                                 rewriteDream()
                             } label: {
                                 Label(
-                                    dream.rewrittenText != nil ? "Rewrite Again" : "Rewrite with AI",
+                                    dream.rewrittenText != nil ? "Narrate Again" : "Narrate",
                                     systemImage: dream.rewrittenText != nil ? "arrow.clockwise" : "sparkles"
                                 )
                             }

@@ -92,8 +92,8 @@ struct DreamRowView: View {
     @State private var appeared = false
 
     private var accentColor: Color {
-        if dream.hasComicPages { return ComicTheme.Colors.goldenYellow }
-        if dream.rewrittenText != nil { return ComicTheme.Colors.boldBlue }
+        if dream.hasComicPages { return ComicTheme.Colors.boldBlue }
+        if dream.rewrittenText != nil { return ComicTheme.Colors.goldenYellow }
         return ComicTheme.Colors.deepPurple
     }
 

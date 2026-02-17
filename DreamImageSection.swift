@@ -133,7 +133,7 @@ struct DreamImageSection: View {
                 Button {
                     generateComicPage()
                 } label: {
-                    Label("Regenerate Comic Page", systemImage: "arrow.clockwise")
+                    Label("Redraw my dream!", systemImage: "arrow.clockwise")
                 }
                 .buttonStyle(.comicSecondary(color: ComicTheme.Colors.boldBlue))
             }
@@ -190,7 +190,7 @@ struct DreamImageSection: View {
                 Button {
                     generateComicPage()
                 } label: {
-                    Label("Generate Comic Page", systemImage: "wand.and.stars")
+                    Label("Draw my dream!", systemImage: "wand.and.stars")
                 }
                 .buttonStyle(.comicPrimary(color: ComicTheme.Colors.boldBlue))
             }
