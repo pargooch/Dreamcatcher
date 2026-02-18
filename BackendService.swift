@@ -57,6 +57,12 @@ class BackendService {
                     let decoder = JSONDecoder()
                     return try decoder.decode(T.self, from: data)
                 } catch {
+                    #if DEBUG
+                    if let raw = String(data: data, encoding: .utf8) {
+                        print("⚠️ Decoding \(T.self) failed. Raw response:\n\(raw)")
+                    }
+                    print("⚠️ Decoding error: \(error)")
+                    #endif
                     throw BackendError.decodingError(error)
                 }
             case 401:
@@ -342,6 +348,40 @@ class BackendService {
         let url = try makeURL(path: "users/avatar")
         let request = try makeRequest(url: url, method: "DELETE", requiresAuth: true)
         try await sendVoid(request)
+    }
+
+    // MARK: - Dream Analysis
+
+    func analyzeDream(text: String) async throws -> DreamAnalysisResponse {
+        let url = try makeURL(path: "dream-analysis")
+        let body: [String: Any] = ["text": text]
+        let data = try JSONSerialization.data(withJSONObject: body)
+        let request = try makeRequest(url: url, method: "POST", body: data, requiresAuth: true)
+        return try await send(request, as: DreamAnalysisResponse.self)
+    }
+
+    func getDreamAnalysisTrends(period: String) async throws -> TrendsResponse {
+        let url = try makeURL(path: "dream-analysis/trends")
+        var components = URLComponents(url: url, resolvingAgainstBaseURL: true)
+        components?.queryItems = [URLQueryItem(name: "period", value: period)]
+        guard let finalURL = components?.url else { throw BackendError.invalidURL }
+        let request = try makeRequest(url: finalURL, method: "GET", requiresAuth: true)
+        return try await send(request, as: TrendsResponse.self)
+    }
+
+    func getDreamAnalysisSummary(period: String) async throws -> AnalysisSummaryResponse {
+        let url = try makeURL(path: "dream-analysis/summary")
+        var components = URLComponents(url: url, resolvingAgainstBaseURL: true)
+        components?.queryItems = [URLQueryItem(name: "period", value: period)]
+        guard let finalURL = components?.url else { throw BackendError.invalidURL }
+        let request = try makeRequest(url: finalURL, method: "GET", requiresAuth: true)
+        return try await send(request, as: AnalysisSummaryResponse.self)
+    }
+
+    func getDreamAnalysis(dreamId: String) async throws -> DreamAnalysisResponse {
+        let url = try makeURL(path: "dream-analysis/\(dreamId)")
+        let request = try makeRequest(url: url, method: "GET", requiresAuth: true)
+        return try await send(request, as: DreamAnalysisResponse.self)
     }
 
     func getAIModels() async throws -> [AIModel] {

@@ -7,12 +7,14 @@ struct DreamCatcherApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @State private var landingOpacity: Double = 1.0
     @State private var landingFinished = false
+    @State private var analysisService = DreamAnalysisService()
 
     var body: some Scene {
         WindowGroup {
             ZStack {
                 ContentView()
                     .environmentObject(store)
+                    .environment(analysisService)
                     .onAppear {
                         _ = NotificationManager.shared
                     }

@@ -12,6 +12,7 @@ struct Dream: Identifiable, Codable {
     var comicPages: [ComicPageImage]?
     var comicLayoutPlan: ComicLayoutPlan?
     var includeAvatarInComic: Bool?
+    var analysis: DreamAnalysisResponse?
 
     init(originalText: String) {
         self.id = UUID()
@@ -24,6 +25,7 @@ struct Dream: Identifiable, Codable {
         self.comicPages = nil
         self.comicLayoutPlan = nil
         self.includeAvatarInComic = nil
+        self.analysis = nil
     }
 
     var hasImages: Bool {

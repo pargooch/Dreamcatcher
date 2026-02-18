@@ -2,6 +2,7 @@ import SwiftUI
 
 struct DreamDetailView: View {
     @EnvironmentObject var store: DreamStore
+    @Environment(DreamAnalysisService.self) private var analysisService
     let dream: Dream
 
     @State private var selectedTone = "happy"
@@ -15,6 +16,7 @@ struct DreamDetailView: View {
     @State private var isEditingOriginal = false
     @State private var editedOriginalText = ""
     @State private var ttsService = TextToSpeechService()
+    @State private var hasPreselectedTone = false
 
     let tones = ["happy", "funny", "hopeful", "calm", "positive"]
 
@@ -71,6 +73,36 @@ struct DreamDetailView: View {
                         } else {
                             Text(dream.originalText)
                                 .font(.body)
+                        }
+                    }
+                }
+
+                // Dream Analysis section
+                if analysisService.isAnalyzing || dream.analysis != nil {
+                    ComicPanelCard(titleBanner: "Dream Analysis", bannerColor: ComicTheme.Colors.hotPink) {
+                        if analysisService.isAnalyzing {
+                            VStack(spacing: 12) {
+                                SoundEffectText(text: "ANALYZING!", fillColor: ComicTheme.Colors.hotPink, fontSize: 20)
+                                ProgressView()
+                                    .tint(ComicTheme.Colors.hotPink)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
+                        } else if let analysis = dream.analysis {
+                            VStack(alignment: .leading, spacing: 12) {
+                                // Emotion badges in flow layout
+                                FlowLayout(spacing: 8) {
+                                    ForEach(analysis.emotions) { emotion in
+                                        EmotionBadgeView(emotion: emotion)
+                                    }
+                                }
+
+                                // Mood suggestion
+                                MoodSuggestionView(suggestedMood: analysis.suggested_mood) { mood in
+                                    let tone = analysisService.mapSuggestedMoodToTone(mood)
+                                    selectedTone = tone
+                                }
+                            }
                         }
                     }
                 }
@@ -224,6 +256,23 @@ struct DreamDetailView: View {
         .onAppear {
             if let currentTone = dream.tone {
                 selectedTone = currentTone
+            }
+            // Pre-select suggested tone if no tone chosen yet
+            if !hasPreselectedTone, dream.tone == nil,
+               let suggested = dream.analysis?.suggested_mood {
+                let tone = analysisService.mapSuggestedMoodToTone(suggested.mood)
+                selectedTone = tone
+                hasPreselectedTone = true
+            }
+            // Trigger analysis if not yet analyzed and user is authenticated
+            if dream.analysis == nil && AuthManager.shared.isAuthenticated {
+                Task {
+                    if let result = try? await analysisService.analyzeDream(text: dream.originalText) {
+                        var updated = dream
+                        updated.analysis = result
+                        store.updateDream(updated)
+                    }
+                }
             }
         }
         .onDisappear {

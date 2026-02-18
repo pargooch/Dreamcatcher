@@ -4,6 +4,7 @@ struct ContentView: View {
     @EnvironmentObject var store: DreamStore
     @State private var showNewDream = false
     @State private var showSettings = false
+    @State private var showAnalysis = false
 
     var body: some View {
         NavigationStack {
@@ -35,12 +36,24 @@ struct ContentView: View {
             .navigationTitle("Dreamcatcher")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button {
-                        showSettings = true
-                    } label: {
-                        Image(systemName: "gearshape.fill")
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundStyle(ComicTheme.Colors.deepPurple)
+                    HStack(spacing: 12) {
+                        Button {
+                            showSettings = true
+                        } label: {
+                            Image(systemName: "gearshape.fill")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundStyle(ComicTheme.Colors.deepPurple)
+                        }
+
+                        if AuthManager.shared.isAuthenticated {
+                            Button {
+                                showAnalysis = true
+                            } label: {
+                                Image(systemName: "chart.line.uptrend.xyaxis")
+                                    .font(.system(size: 18, weight: .bold))
+                                    .foregroundStyle(ComicTheme.Colors.hotPink)
+                            }
+                        }
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -59,6 +72,11 @@ struct ContentView: View {
             .sheet(isPresented: $showSettings) {
                 NavigationView {
                     SettingsView()
+                }
+            }
+            .sheet(isPresented: $showAnalysis) {
+                NavigationView {
+                    DreamAnalysisView()
                 }
             }
         }

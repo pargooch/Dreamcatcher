@@ -3,6 +3,7 @@ import SwiftUI
 struct NewDreamView: View {
     @EnvironmentObject var store: DreamStore
     @Environment(\.dismiss) var dismiss
+    @Environment(DreamAnalysisService.self) private var analysisService
 
     @State private var dreamText = ""
     @State private var speechService = SpeechRecognitionService()
@@ -69,6 +70,19 @@ struct NewDreamView: View {
                     Button {
                         let dream = Dream(originalText: dreamText)
                         store.addDream(dream)
+                        // Fire-and-forget analysis if authenticated
+                        if AuthManager.shared.isAuthenticated {
+                            let dreamId = dream.id
+                            let text = dreamText
+                            Task {
+                                if let result = try? await analysisService.analyzeDream(text: text) {
+                                    if var updated = store.dreams.first(where: { $0.id == dreamId }) {
+                                        updated.analysis = result
+                                        store.updateDream(updated)
+                                    }
+                                }
+                            }
+                        }
                         dismiss()
                     } label: {
                         Label("Save Dream", systemImage: "checkmark.circle.fill")
