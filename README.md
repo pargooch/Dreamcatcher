@@ -1,4 +1,5 @@
 # REMic
+###### Last update: 2025-08-20
 
 A therapeutic iOS app for dream journaling and nightmare rewriting using AI-powered Imagery Rehearsal Therapy (IRT).
 
