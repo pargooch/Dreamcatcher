@@ -3,10 +3,16 @@ import Foundation
 struct APIUser: Codable {
     let _id: String
     let email: String
+    let email_verified: Bool?
     let status: String
     let profile: UserProfile?
     let created_at: String
     let updated_at: String
+}
+
+struct MessageResponse: Codable {
+    let message: String?
+    let error: String?
 }
 
 struct UserProfile: Codable {

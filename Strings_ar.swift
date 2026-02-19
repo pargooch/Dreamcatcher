@@ -294,4 +294,12 @@ let strings_ar: [String: String] = [
     "Time for your weekly dream check-in.": "حان وقت مراجعتك الأسبوعية للأحلام.",
     "Reflect on your dream journey this week.": "تأمل في رحلتك في عالم الأحلام هذا الأسبوع.",
     "A week of dreams - what stories did they tell?": "أسبوع من الأحلام - أي قصص رَوَت؟",
+
+    // MARK: - Email Verification
+    "Verify your email to unlock all features": "تحقق من بريدك الإلكتروني لفتح جميع الميزات",
+    "Resend": "إعادة الإرسال",
+    "Verification email sent!": "تم إرسال بريد التحقق!",
+    "Email verified successfully!": "تم التحقق من البريد الإلكتروني بنجاح!",
+    "Verification failed": "فشل التحقق",
+    "Email is already verified": "البريد الإلكتروني محقق بالفعل",
 ]

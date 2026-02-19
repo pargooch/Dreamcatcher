@@ -2,10 +2,13 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject var store: DreamStore
+    @ObservedObject private var authManager = AuthManager.shared
     @State private var showNewDream = false
     @State private var showSettings = false
     @State private var showAnalysis = false
     @State private var searchText = ""
+    @State private var resendMessage: String?
+    @State private var isResending = false
 
     private var filteredDreams: [Dream] {
         guard !searchText.isEmpty else { return store.dreams }
@@ -20,6 +23,9 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
+                if authManager.isAuthenticated && !authManager.emailVerified {
+                    emailVerificationBanner
+                }
                 LazyVStack(spacing: ComicTheme.Dimensions.gutterWidth) {
                     if store.dreams.isEmpty {
                         emptyState
@@ -118,6 +124,64 @@ struct ContentView: View {
             }
         }
         .padding(.top, 40)
+    }
+
+    private var emailVerificationBanner: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "envelope.badge")
+                .font(.system(size: 16, weight: .bold))
+                .foregroundColor(ComicTheme.Colors.goldenYellow)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(L("Verify your email to unlock all features"))
+                    .font(ComicTheme.Typography.caption())
+                    .foregroundColor(.primary)
+
+                if let resendMessage {
+                    Text(resendMessage)
+                        .font(ComicTheme.Typography.caption())
+                        .foregroundColor(.secondary)
+                }
+            }
+
+            Spacer()
+
+            Button {
+                guard !isResending else { return }
+                isResending = true
+                Task {
+                    let message = await authManager.resendVerificationEmail()
+                    resendMessage = message
+                    isResending = false
+                    try? await Task.sleep(nanoseconds: 3_000_000_000)
+                    resendMessage = nil
+                }
+            } label: {
+                if isResending {
+                    ProgressView()
+                        .controlSize(.small)
+                } else {
+                    Text(L("Resend"))
+                        .font(.caption.weight(.bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(Capsule().fill(ComicTheme.Colors.goldenYellow))
+                }
+            }
+            .disabled(isResending)
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: ComicTheme.Dimensions.panelCornerRadius)
+                .fill(ComicTheme.Colors.goldenYellow.opacity(0.12))
+                .overlay(
+                    RoundedRectangle(cornerRadius: ComicTheme.Dimensions.panelCornerRadius)
+                        .stroke(ComicTheme.Colors.goldenYellow.opacity(0.4), lineWidth: 1.5)
+                )
+        )
+        .padding(.horizontal)
+        .padding(.top, 4)
     }
 }
 

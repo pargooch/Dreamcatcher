@@ -8,6 +8,9 @@ struct REMicApp: App {
     @State private var landingOpacity: Double = 1.0
     @State private var landingFinished = false
     @State private var analysisService = DreamAnalysisService()
+    @State private var toastMessage: String?
+    @State private var toastIsError = false
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
@@ -32,6 +35,77 @@ struct REMicApp: App {
                     .opacity(landingOpacity)
                     .zIndex(1)
                 }
+
+                // Toast overlay
+                if let message = toastMessage {
+                    VStack {
+                        Text(message)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .background(
+                                Capsule()
+                                    .fill(toastIsError ? Color.red : Color.green)
+                            )
+                            .padding(.top, 60)
+                        Spacer()
+                    }
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .zIndex(2)
+                }
+            }
+            .onOpenURL { url in
+                handleDeepLink(url)
+            }
+            .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
+                if let url = activity.webpageURL {
+                    handleDeepLink(url)
+                }
+            }
+            .onChange(of: scenePhase) { _, newPhase in
+                if newPhase == .active {
+                    Task { await AuthManager.shared.refreshUser() }
+                }
+            }
+        }
+    }
+    // MARK: - Deep Link Handling
+
+    private func handleDeepLink(_ url: URL) {
+        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: true) else { return }
+
+        // Handle both remic://verify and https://api.remic.app/api/auth/verify-email
+        let isVerifyScheme = url.scheme == "remic" && url.host == "verify"
+        let isVerifyUniversal = url.host == "api.remic.app" && url.path.contains("/auth/verify-email")
+
+        guard isVerifyScheme || isVerifyUniversal else { return }
+
+        let params = Dictionary(uniqueKeysWithValues:
+            (components.queryItems ?? []).compactMap { item in
+                item.value.map { (item.name, $0) }
+            }
+        )
+
+        let status = params["status"]
+        let message = params["message"]
+
+        if status == "success" {
+            showToast(L("Email verified successfully!"), isError: false)
+            Task { await AuthManager.shared.refreshUser() }
+        } else if status == "error" {
+            showToast(message ?? L("Verification failed"), isError: true)
+        }
+    }
+
+    private func showToast(_ message: String, isError: Bool) {
+        toastIsError = isError
+        withAnimation(.spring(response: 0.4)) {
+            toastMessage = message
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+            withAnimation(.easeOut) {
+                toastMessage = nil
             }
         }
     }

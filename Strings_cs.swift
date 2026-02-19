@@ -294,4 +294,12 @@ let strings_cs: [String: String] = [
     "Time for your weekly dream check-in.": "Čas na týdenní kontrolu snů.",
     "Reflect on your dream journey this week.": "Zamysli se nad svou cestou se sny tento týden.",
     "A week of dreams - what stories did they tell?": "Týden snů - jaké příběhy vyprávěly?",
+
+    // MARK: - Email Verification
+    "Verify your email to unlock all features": "Ověřte svůj e-mail pro odemknutí všech funkcí",
+    "Resend": "Odeslat znovu",
+    "Verification email sent!": "Ověřovací e-mail byl odeslán!",
+    "Email verified successfully!": "E-mail byl úspěšně ověřen!",
+    "Verification failed": "Ověření se nezdařilo",
+    "Email is already verified": "E-mail je již ověřen",
 ]

@@ -294,4 +294,12 @@ let strings_el: [String: String] = [
     "Time for your weekly dream check-in.": "Ώρα για τον εβδομαδιαίο έλεγχο ονείρων σας.",
     "Reflect on your dream journey this week.": "Αναστοχαστείτε το ταξίδι ονείρων σας αυτή την εβδομάδα.",
     "A week of dreams - what stories did they tell?": "Μια εβδομάδα ονείρων - τι ιστορίες είπαν;",
+
+    // MARK: - Email Verification
+    "Verify your email to unlock all features": "Επαληθεύστε το email σας για να ξεκλειδώσετε όλες τις λειτουργίες",
+    "Resend": "Επανάληψη αποστολής",
+    "Verification email sent!": "Το email επαλήθευσης στάλθηκε!",
+    "Email verified successfully!": "Το email επαληθεύτηκε επιτυχώς!",
+    "Verification failed": "Η επαλήθευση απέτυχε",
+    "Email is already verified": "Το email είναι ήδη επαληθευμένο",
 ]

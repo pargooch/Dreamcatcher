@@ -294,4 +294,12 @@ let strings_fa: [String: String] = [
     "Time for your weekly dream check-in.": "زمان بررسی هفتگی رویاهای شماست.",
     "Reflect on your dream journey this week.": "در سفر رویایی خود این هفته تأمل کنید.",
     "A week of dreams - what stories did they tell?": "یک هفته رویا - چه داستان‌هایی روایت کردند؟",
+
+    // MARK: - Email Verification
+    "Verify your email to unlock all features": "ایمیل خود را تأیید کنید تا همه قابلیت‌ها فعال شوند",
+    "Resend": "ارسال مجدد",
+    "Verification email sent!": "ایمیل تأیید ارسال شد!",
+    "Email verified successfully!": "ایمیل با موفقیت تأیید شد!",
+    "Verification failed": "تأیید ناموفق بود",
+    "Email is already verified": "ایمیل قبلاً تأیید شده است",
 ]

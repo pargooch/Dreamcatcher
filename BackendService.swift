@@ -7,7 +7,7 @@ class BackendService {
         #if DEBUG && targetEnvironment(simulator)
         return URL(string: "http://localhost:3002/api/")!
         #else
-        return URL(string: "https://dreamcatcher-api.percodice.it/api/")!
+        return URL(string: "https://api.remic.app/api/")!
         #endif
     }()
     private let session: URLSession
@@ -302,6 +302,20 @@ class BackendService {
         let data = try JSONSerialization.data(withJSONObject: body)
         let request = try makeRequest(url: url, method: "POST", body: data, requiresAuth: true)
         return try await send(request, as: ComicPageGenerationResponse.self)
+    }
+
+    // MARK: - User / Verification
+
+    func getMe() async throws -> APIUser {
+        let url = try makeURL(path: "users/me")
+        let request = try makeRequest(url: url, method: "GET", requiresAuth: true)
+        return try await send(request, as: APIUser.self)
+    }
+
+    func resendVerification() async throws -> MessageResponse {
+        let url = try makeURL(path: "auth/resend-verification")
+        let request = try makeRequest(url: url, method: "POST", requiresAuth: true)
+        return try await send(request, as: MessageResponse.self)
     }
 
     // MARK: - Profile

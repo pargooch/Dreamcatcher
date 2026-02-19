@@ -294,4 +294,12 @@ let strings_nl: [String: String] = [
     "Time for your weekly dream check-in.": "Tijd voor je wekelijkse droom-check-in.",
     "Reflect on your dream journey this week.": "Reflecteer op je droomreis deze week.",
     "A week of dreams - what stories did they tell?": "Een week vol dromen \u{2013} welke verhalen vertelden ze?",
+
+    // MARK: - Email Verification
+    "Verify your email to unlock all features": "Verifieer je e-mail om alle functies te ontgrendelen",
+    "Resend": "Opnieuw verzenden",
+    "Verification email sent!": "Verificatie-e-mail verzonden!",
+    "Email verified successfully!": "E-mail succesvol geverifieerd!",
+    "Verification failed": "Verificatie mislukt",
+    "Email is already verified": "E-mail is al geverifieerd",
 ]

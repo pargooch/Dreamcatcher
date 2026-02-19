@@ -294,4 +294,12 @@ let strings_ro: [String: String] = [
     "Time for your weekly dream check-in.": "E timpul pentru check-in-ul s\u{0103}pt\u{0103}m\u{00E2}nal al viselor.",
     "Reflect on your dream journey this week.": "Reflect\u{0103} asupra c\u{0103}l\u{0103}toriei tale de vise din aceast\u{0103} s\u{0103}pt\u{0103}m\u{00E2}n\u{0103}.",
     "A week of dreams - what stories did they tell?": "O s\u{0103}pt\u{0103}m\u{00E2}n\u{0103} de vise \u{2013} ce pove\u{015F}ti au spus?",
+
+    // MARK: - Email Verification
+    "Verify your email to unlock all features": "Verific\u{0103}-\u{021B}i emailul pentru a debloca toate func\u{021B}iile",
+    "Resend": "Retrimite",
+    "Verification email sent!": "Emailul de verificare a fost trimis!",
+    "Email verified successfully!": "Email verificat cu succes!",
+    "Verification failed": "Verificarea a e\u{015F}uat",
+    "Email is already verified": "Emailul este deja verificat",
 ]

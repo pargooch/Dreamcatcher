@@ -24,6 +24,9 @@ class AuthManager: ObservableObject {
     /// User ID from the backend (used for cloud operations)
     @Published var cloudUserId: String?
     
+    /// Whether the user's email has been verified
+    @Published var emailVerified = false
+
     /// Whether cloud sync is enabled
     @Published var isCloudEnabled = true
     
@@ -72,6 +75,7 @@ class AuthManager: ObservableObject {
     private let ageKey = "userAge"
     private let timezoneKey = "userTimezone"
     private let avatarDescriptionKey = "avatarDescription"
+    private let emailVerifiedKey = "emailVerified"
     
     // MARK: - Services
     
@@ -160,6 +164,7 @@ class AuthManager: ObservableObject {
         userProfile = nil
         avatarImageData = nil
         avatarDescription = nil
+        emailVerified = false
         isAuthenticated = false
 
         // Clear stored credentials
@@ -170,6 +175,7 @@ class AuthManager: ObservableObject {
         UserDefaults.standard.removeObject(forKey: ageKey)
         UserDefaults.standard.removeObject(forKey: timezoneKey)
         UserDefaults.standard.removeObject(forKey: avatarDescriptionKey)
+        UserDefaults.standard.removeObject(forKey: emailVerifiedKey)
 
         // Remove avatar file
         clearAvatarFromDocuments()
@@ -209,6 +215,39 @@ class AuthManager: ObservableObject {
         }
     }
 
+    /// Re-fetch user object from backend and update emailVerified state
+    func refreshUser() async {
+        guard isAuthenticated else { return }
+        do {
+            let user = try await backendService.getMe()
+            await MainActor.run {
+                self.emailVerified = user.email_verified ?? false
+                UserDefaults.standard.set(self.emailVerified, forKey: emailVerifiedKey)
+                if let profile = user.profile {
+                    self.userProfile = profile
+                    cacheProfile(profile)
+                }
+            }
+        } catch {
+            print("Failed to refresh user: \(error)")
+        }
+    }
+
+    /// Resend verification email. Returns a user-facing message.
+    func resendVerificationEmail() async -> String {
+        do {
+            let response = try await backendService.resendVerification()
+            return response.message ?? L("Verification email sent!")
+        } catch let error as BackendError {
+            if case .serverError(400, let message) = error {
+                return message ?? L("Email is already verified")
+            }
+            return error.localizedDescription
+        } catch {
+            return error.localizedDescription
+        }
+    }
+
     private func cacheProfile(_ profile: UserProfile) {
         if let gender = profile.gender {
             UserDefaults.standard.set(gender, forKey: genderKey)
@@ -239,6 +278,7 @@ class AuthManager: ObservableObject {
         cloudUserId = UserDefaults.standard.string(forKey: userIdKey)
         userEmail = UserDefaults.standard.string(forKey: emailKey)
         isCloudEnabled = UserDefaults.standard.object(forKey: cloudEnabledKey) as? Bool ?? true
+        emailVerified = UserDefaults.standard.bool(forKey: emailVerifiedKey)
 
         // Restore cached profile
         let gender = UserDefaults.standard.string(forKey: genderKey)
@@ -262,6 +302,7 @@ class AuthManager: ObservableObject {
             self.authToken = response.token
             self.cloudUserId = response.user._id
             self.userEmail = email
+            self.emailVerified = response.user.email_verified ?? false
             self.isAuthenticated = true
 
             // Cache user profile from auth response
@@ -274,6 +315,7 @@ class AuthManager: ObservableObject {
             UserDefaults.standard.set(response.token, forKey: tokenKey)
             UserDefaults.standard.set(response.user._id, forKey: userIdKey)
             UserDefaults.standard.set(email, forKey: emailKey)
+            UserDefaults.standard.set(self.emailVerified, forKey: emailVerifiedKey)
         }
     }
     

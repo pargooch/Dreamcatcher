@@ -294,4 +294,12 @@ let strings_tr: [String: String] = [
     "Time for your weekly dream check-in.": "Haftalık rüya kontrolünüzün zamanı geldi.",
     "Reflect on your dream journey this week.": "Bu haftaki rüya yolculuğunuz üzerinde düşünün.",
     "A week of dreams - what stories did they tell?": "Bir haftalık rüyalar - ne hikayeler anlattılar?",
+
+    // MARK: - Email Verification
+    "Verify your email to unlock all features": "Tüm özelliklerin kilidini açmak için e-postanızı doğrulayın",
+    "Resend": "Tekrar gönder",
+    "Verification email sent!": "Doğrulama e-postası gönderildi!",
+    "Email verified successfully!": "E-posta başarıyla doğrulandı!",
+    "Verification failed": "Doğrulama başarısız oldu",
+    "Email is already verified": "E-posta zaten doğrulanmış",
 ]

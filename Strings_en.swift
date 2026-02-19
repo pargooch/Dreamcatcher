@@ -294,4 +294,12 @@ let strings_en: [String: String] = [
     "Time for your weekly dream check-in.": "Time for your weekly dream check-in.",
     "Reflect on your dream journey this week.": "Reflect on your dream journey this week.",
     "A week of dreams - what stories did they tell?": "A week of dreams - what stories did they tell?",
+
+    // MARK: - Email Verification
+    "Verify your email to unlock all features": "Verify your email to unlock all features",
+    "Resend": "Resend",
+    "Verification email sent!": "Verification email sent!",
+    "Email verified successfully!": "Email verified successfully!",
+    "Verification failed": "Verification failed",
+    "Email is already verified": "Email is already verified",
 ]

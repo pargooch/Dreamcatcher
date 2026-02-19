@@ -294,4 +294,12 @@ let strings_ru: [String: String] = [
     "Time for your weekly dream check-in.": "Время для еженедельной проверки снов.",
     "Reflect on your dream journey this week.": "Поразмышляйте о вашем путешествии со снами на этой неделе.",
     "A week of dreams - what stories did they tell?": "Неделя снов - какие истории они рассказали?",
+
+    // MARK: - Email Verification
+    "Verify your email to unlock all features": "Подтвердите свою электронную почту, чтобы разблокировать все функции",
+    "Resend": "Отправить повторно",
+    "Verification email sent!": "Письмо с подтверждением отправлено!",
+    "Email verified successfully!": "Электронная почта успешно подтверждена!",
+    "Verification failed": "Подтверждение не удалось",
+    "Email is already verified": "Электронная почта уже подтверждена",
 ]
