@@ -23,7 +23,7 @@ struct DreamImageSection: View {
     }
 
     var body: some View {
-        ComicPanelCard(titleBanner: "Dream Visualization", bannerColor: ComicTheme.Colors.goldenYellow) {
+        ComicPanelCard(titleBanner: L("Dream Visualization"), bannerColor: ComicTheme.Colors.goldenYellow) {
             VStack(alignment: .leading, spacing: 16) {
                 // Header row
                 HStack {
@@ -33,7 +33,7 @@ struct DreamImageSection: View {
                                 
                              
                             }
-                            Text("AI creates a comic page from your dream")
+                            Text(L("AI creates a comic page from your dream"))
                                 .font(.caption2)
                                 .foregroundColor(.gray)
                         }
@@ -46,7 +46,7 @@ struct DreamImageSection: View {
                         Button {
                             showComicViewer = true
                         } label: {
-                            Label("View", systemImage: "eye")
+                            Label(L("View"), systemImage: "eye")
                         }
                         .buttonStyle(.comicSecondary)
                         .frame(maxWidth: 120)
@@ -54,7 +54,7 @@ struct DreamImageSection: View {
                         Button {
                             showLegacyGallery = true
                         } label: {
-                            Label("View", systemImage: "eye")
+                            Label(L("View"), systemImage: "eye")
                         }
                         .buttonStyle(.comicSecondary)
                         .frame(maxWidth: 120)
@@ -72,7 +72,7 @@ struct DreamImageSection: View {
                         Image(systemName: "person.crop.circle")
                             .font(.title3.weight(.bold))
                             .foregroundColor(ComicTheme.Colors.deepPurple)
-                        Text("Include my likeness")
+                        Text(L("Include my likeness"))
                             .font(ComicTheme.Typography.comicButton(13))
                             .textCase(.uppercase)
                             .tracking(0.5)
@@ -132,7 +132,7 @@ struct DreamImageSection: View {
                 Button {
                     generateComicPage()
                 } label: {
-                    Label("Redraw my dream!", systemImage: "arrow.clockwise")
+                    Label(L("Redraw my dream!"), systemImage: "arrow.clockwise")
                 }
                 .buttonStyle(.comicSecondary(color: ComicTheme.Colors.boldBlue))
             }
@@ -155,7 +155,7 @@ struct DreamImageSection: View {
                 Button {
                     generateComicPage()
                 } label: {
-                    Label("Regenerate as Comic Page", systemImage: "arrow.clockwise")
+                    Label(L("Regenerate as Comic Page"), systemImage: "arrow.clockwise")
                 }
                 .buttonStyle(.comicSecondary(color: ComicTheme.Colors.boldBlue))
             }
@@ -168,9 +168,9 @@ struct DreamImageSection: View {
 
     private var unavailableView: some View {
         VStack(spacing: 12) {
-            SoundEffectText(text: "OFFLINE!", fillColor: ComicTheme.Colors.crimsonRed, fontSize: 22)
+            SoundEffectText(text: L("OFFLINE!"), fillColor: ComicTheme.Colors.crimsonRed, fontSize: 22)
 
-            Text("Image generation requires Apple Silicon or sign-in.")
+            Text(L("Image generation requires Apple Silicon or sign-in."))
                 .font(ComicTheme.Typography.speechBubble(13))
                 .multilineTextAlignment(.center)
                 .speechBubble()
@@ -189,7 +189,7 @@ struct DreamImageSection: View {
                 Button {
                     generateComicPage()
                 } label: {
-                    Label("Draw my dream!", systemImage: "wand.and.stars")
+                    Label(L("Draw my dream!"), systemImage: "wand.and.stars")
                 }
                 .buttonStyle(.comicPrimary(color: ComicTheme.Colors.boldBlue))
             }
@@ -202,10 +202,10 @@ struct DreamImageSection: View {
 
     private var generatingView: some View {
         VStack(spacing: 14) {
-            SoundEffectText(text: "CREATING!", fillColor: ComicTheme.Colors.goldenYellow, fontSize: 26)
+            SoundEffectText(text: L("CREATING!"), fillColor: ComicTheme.Colors.goldenYellow, fontSize: 26)
                 .frame(maxWidth: .infinity)
 
-            Text(imageService.statusMessage.isEmpty ? "Painting your dream..." : imageService.statusMessage)
+            Text(imageService.statusMessage.isEmpty ? L("Painting your dream...") : imageService.statusMessage)
                 .font(ComicTheme.Typography.speechBubble(13))
                 .speechBubble()
 
@@ -215,7 +215,7 @@ struct DreamImageSection: View {
             Button {
                 imageService.cancel()
             } label: {
-                Label("Cancel", systemImage: "xmark")
+                Label(L("Cancel"), systemImage: "xmark")
             }
             .buttonStyle(.comicDestructive)
         }
@@ -229,7 +229,7 @@ struct DreamImageSection: View {
                 Image(systemName: "person.text.rectangle")
                     .font(.title3.weight(.bold))
                     .foregroundColor(ComicTheme.Colors.hotPink)
-                Text("Add your details in Profile to appear in your dreams!")
+                Text(L("Add your details in Profile to appear in your dreams!"))
                     .font(ComicTheme.Typography.speechBubble(12))
                     .foregroundColor(.secondary)
             }
@@ -256,7 +256,7 @@ struct DreamImageSection: View {
                 Button {
                     generateComicPage()
                 } label: {
-                    Label("Try Again", systemImage: "arrow.clockwise")
+                    Label(L("Try Again"), systemImage: "arrow.clockwise")
                 }
                 .buttonStyle(.comicSecondary(color: ComicTheme.Colors.crimsonRed))
             }
@@ -351,7 +351,7 @@ struct DreamImageGalleryView: View {
                                     .padding()
                             }
 
-                            Text("Scene \(index + 1)")
+                            Text(L("Scene %d", index + 1))
                                 .font(ComicTheme.Typography.sectionHeader(16))
 
                             Text(image.prompt)
@@ -395,11 +395,11 @@ struct DreamImageGalleryView: View {
                 .background(ComicTheme.Semantic.cardSurface(.light))
             }
             .halftoneBackground()
-            .navigationTitle("Dream Sequence")
+            .navigationTitle(L("Dream Sequence"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
+                    Button(L("Done")) {
                         dismiss()
                     }
                     .foregroundStyle(ComicTheme.Colors.boldBlue)
@@ -424,10 +424,10 @@ struct SignUpPromptBanner: View {
                     .font(.title3.weight(.bold))
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Save your dreams!")
+                    Text(L("Save your dreams!"))
                         .font(ComicTheme.Typography.comicButton(13))
                         .textCase(.uppercase)
-                    Text("Sign up to sync rewrites and comics across devices.")
+                    Text(L("Sign up to sync rewrites and comics across devices."))
                         .font(ComicTheme.Typography.speechBubble(12))
                         .foregroundColor(.secondary)
                 }

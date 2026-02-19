@@ -30,7 +30,7 @@ struct DreamDetailView: View {
                 // Dream date
                 ComicPanelCard(bannerColor: ComicTheme.Colors.goldenYellow) {
                     DatePicker(
-                        "Dream date",
+                        L("Dream date"),
                         selection: Binding(
                             get: { dream.date },
                             set: { newDate in
@@ -47,7 +47,7 @@ struct DreamDetailView: View {
                 }
 
                 // Original dream
-                ComicPanelCard(titleBanner: "Original Dream", bannerColor: ComicTheme.Colors.deepPurple) {
+                ComicPanelCard(titleBanner: L("Original Dream"), bannerColor: ComicTheme.Colors.deepPurple) {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
                             Spacer()
@@ -59,7 +59,7 @@ struct DreamDetailView: View {
                                     isEditingOriginal = true
                                 }
                             } label: {
-                                Label(isEditingOriginal ? "Save" : "Edit", systemImage: isEditingOriginal ? "checkmark" : "pencil")
+                                Label(isEditingOriginal ? L("Save") : L("Edit"), systemImage: isEditingOriginal ? "checkmark" : "pencil")
                             }
                             .buttonStyle(.comicSecondary)
                             .frame(maxWidth: 120)
@@ -69,7 +69,7 @@ struct DreamDetailView: View {
                                     isEditingOriginal = false
                                     editedOriginalText = ""
                                 } label: {
-                                    Label("Cancel", systemImage: "xmark")
+                                    Label(L("Cancel"), systemImage: "xmark")
                                 }
                                 .buttonStyle(.comicDestructive)
                                 .frame(maxWidth: 120)
@@ -101,10 +101,10 @@ struct DreamDetailView: View {
 
                 // Dream Analysis section
                 if analysisService.isAnalyzing || dream.analysis != nil {
-                    ComicPanelCard(titleBanner: "Dream Analysis", bannerColor: ComicTheme.Colors.hotPink) {
+                    ComicPanelCard(titleBanner: L("Dream Analysis"), bannerColor: ComicTheme.Colors.hotPink) {
                         if analysisService.isAnalyzing {
                             VStack(spacing: 12) {
-                                SoundEffectText(text: "ANALYZING!", fillColor: ComicTheme.Colors.hotPink, fontSize: 20)
+                                SoundEffectText(text: L("ANALYZING!"), fillColor: ComicTheme.Colors.hotPink, fontSize: 20)
                                 ProgressView()
                                     .tint(ComicTheme.Colors.hotPink)
                             }
@@ -131,7 +131,7 @@ struct DreamDetailView: View {
 
                 // Show rewritten dream if available
                 if let rewritten = dream.rewrittenText {
-                    ComicPanelCard(titleBanner: "Rewritten Dream (\(dream.tone?.capitalized ?? ""))", bannerColor: ComicTheme.Colors.boldBlue) {
+                    ComicPanelCard(titleBanner: L("Rewritten Dream (%@)", dream.tone?.capitalized ?? ""), bannerColor: ComicTheme.Colors.boldBlue) {
                         VStack(alignment: .leading, spacing: 12) {
                             HStack {
                                 Spacer()
@@ -143,7 +143,7 @@ struct DreamDetailView: View {
                                         isEditing = true
                                     }
                                 } label: {
-                                    Label(isEditing ? "Save" : "Edit", systemImage: isEditing ? "checkmark" : "pencil")
+                                    Label(isEditing ? L("Save") : L("Edit"), systemImage: isEditing ? "checkmark" : "pencil")
                                 }
                                 .buttonStyle(.comicSecondary)
                                 .frame(maxWidth: 120)
@@ -153,7 +153,7 @@ struct DreamDetailView: View {
                                         isEditing = false
                                         editedText = ""
                                     } label: {
-                                        Label("Cancel", systemImage: "xmark")
+                                        Label(L("Cancel"), systemImage: "xmark")
                                     }
                                     .buttonStyle(.comicDestructive)
                                     .frame(maxWidth: 120)
@@ -185,19 +185,19 @@ struct DreamDetailView: View {
                                     ttsService.speak(rewritten)
                                 } label: {
                                     Label(
-                                        ttsService.isSpeaking ? "Stop" : "Play Story",
+                                        ttsService.isSpeaking ? L("Stop") : L("Play Story"),
                                         systemImage: ttsService.isSpeaking ? "stop.fill" : "play.fill"
                                     )
                                 }
                                 .buttonStyle(.comicSecondary(color: ComicTheme.Colors.emeraldGreen))
-                                .accessibilityHint(ttsService.isSpeaking ? "Tap to stop reading the story" : "Tap to hear the story read aloud")
+                                .accessibilityHint(ttsService.isSpeaking ? L("Tap to stop reading the story") : L("Tap to hear the story read aloud"))
                             }
                         }
                     }
                 }
 
                 // Tone picker
-                ComicPanelCard(titleBanner: dream.rewrittenText != nil ? "Try a Different Tone?" : "How Should This Dream Feel?", bannerColor: ComicTheme.Colors.crimsonRed) {
+                ComicPanelCard(titleBanner: dream.rewrittenText != nil ? L("Try a Different Tone?") : L("How Should This Dream Feel?"), bannerColor: ComicTheme.Colors.crimsonRed) {
                     VStack(alignment: .leading, spacing: 12) {
                         // Comic-styled tone chips
                         ScrollView(.horizontal, showsIndicators: false) {
@@ -206,7 +206,7 @@ struct DreamDetailView: View {
                                     Button {
                                         selectedTone = tone
                                     } label: {
-                                        Text(tone.capitalized)
+                                        Text(L(tone.capitalized))
                                             .font(.system(size: 13, weight: .bold))
                                             .tracking(0.5)
                                     }
@@ -218,7 +218,7 @@ struct DreamDetailView: View {
 
                         if isLoading {
                             VStack(spacing: 12) {
-                                SoundEffectText(text: "Narrating!", fillColor: ComicTheme.Colors.boldBlue, fontSize: 20)
+                                SoundEffectText(text: L("Narrating!"), fillColor: ComicTheme.Colors.boldBlue, fontSize: 20)
 
                                 ProgressView()
                                     .tint(ComicTheme.Colors.boldBlue)
@@ -226,7 +226,7 @@ struct DreamDetailView: View {
                                 Button {
                                     cancelRewrite()
                                 } label: {
-                                    Label("Cancel", systemImage: "xmark")
+                                    Label(L("Cancel"), systemImage: "xmark")
                                 }
                                 .buttonStyle(.comicDestructive)
                             }
@@ -235,7 +235,7 @@ struct DreamDetailView: View {
                                 rewriteDream()
                             } label: {
                                 Label(
-                                    dream.rewrittenText != nil ? "Narrate Again" : "Narrate",
+                                    dream.rewrittenText != nil ? L("Narrate Again") : L("Narrate"),
                                     systemImage: dream.rewrittenText != nil ? "arrow.clockwise" : "sparkles"
                                 )
                             }
@@ -254,7 +254,7 @@ struct DreamDetailView: View {
                                 Button {
                                     rewriteDream()
                                 } label: {
-                                    Label("Try Again", systemImage: "arrow.clockwise")
+                                    Label(L("Try Again"), systemImage: "arrow.clockwise")
                                 }
                                 .buttonStyle(.comicSecondary)
                             }
@@ -274,7 +274,7 @@ struct DreamDetailView: View {
                 Button(role: .destructive) {
                     showDeleteConfirmation = true
                 } label: {
-                    Label("Delete Dream", systemImage: "trash")
+                    Label(L("Delete Dream"), systemImage: "trash")
                 }
                 .buttonStyle(.comicDestructive)
                 .padding(.top, 8)
@@ -282,16 +282,16 @@ struct DreamDetailView: View {
             .padding()
         }
         .halftoneBackground()
-        .navigationTitle("Dream")
+        .navigationTitle(L("Dream"))
         .navigationBarTitleDisplayMode(.inline)
-        .confirmationDialog("Delete this dream?", isPresented: $showDeleteConfirmation, titleVisibility: .visible) {
-            Button("Delete", role: .destructive) {
+        .confirmationDialog(L("Delete this dream?"), isPresented: $showDeleteConfirmation, titleVisibility: .visible) {
+            Button(L("Delete"), role: .destructive) {
                 store.deleteDream(dream)
                 dismiss()
             }
-            Button("Cancel", role: .cancel) {}
+            Button(L("Cancel"), role: .cancel) {}
         } message: {
-            Text("This will permanently remove this dream and all its content.")
+            Text(L("This will permanently remove this dream and all its content."))
         }
         .onAppear {
             if let currentTone = dream.tone {

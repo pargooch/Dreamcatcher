@@ -15,8 +15,8 @@ struct DreamAnalysisView: View {
         ScrollView {
             VStack(spacing: 20) {
                 // Period Selector
-                ComicPanelCard(titleBanner: "Time Period", bannerColor: ComicTheme.Colors.deepPurple) {
-                    Picker("Period", selection: $service.selectedPeriod) {
+                ComicPanelCard(titleBanner: L("Time Period"), bannerColor: ComicTheme.Colors.deepPurple) {
+                    Picker(L("Period"), selection: $service.selectedPeriod) {
                         ForEach(DreamAnalysisService.AnalysisPeriod.allCases, id: \.self) { period in
                             Text(period.displayName).tag(period)
                         }
@@ -25,12 +25,12 @@ struct DreamAnalysisView: View {
                 }
 
                 // Trend Chart
-                ComicPanelCard(titleBanner: "Emotion Trends", bannerColor: ComicTheme.Colors.hotPink) {
+                ComicPanelCard(titleBanner: L("Emotion Trends"), bannerColor: ComicTheme.Colors.hotPink) {
                     if analysisService.isLoadingTrends {
                         VStack(spacing: 12) {
                             ProgressView()
                                 .tint(ComicTheme.Colors.hotPink)
-                            Text("Loading trends...")
+                            Text(L("Loading trends..."))
                                 .font(ComicTheme.Typography.speechBubble(12))
                                 .foregroundColor(.secondary)
                         }
@@ -55,11 +55,11 @@ struct DreamAnalysisView: View {
                 if let summary = analysisService.summary {
                     summarySection(summary)
                 } else if analysisService.isLoadingSummary {
-                    ComicPanelCard(titleBanner: "Summary", bannerColor: ComicTheme.Colors.boldBlue) {
+                    ComicPanelCard(titleBanner: L("Summary"), bannerColor: ComicTheme.Colors.boldBlue) {
                         VStack(spacing: 12) {
                             ProgressView()
                                 .tint(ComicTheme.Colors.boldBlue)
-                            Text("Loading summary...")
+                            Text(L("Loading summary..."))
                                 .font(ComicTheme.Typography.speechBubble(12))
                                 .foregroundColor(.secondary)
                         }
@@ -67,7 +67,7 @@ struct DreamAnalysisView: View {
                         .padding(.vertical, 20)
                     }
                 } else if let error = analysisService.summaryError {
-                    ComicPanelCard(titleBanner: "Summary", bannerColor: ComicTheme.Colors.boldBlue) {
+                    ComicPanelCard(titleBanner: L("Summary"), bannerColor: ComicTheme.Colors.boldBlue) {
                         errorView(message: error) {
                             Task { await analysisService.fetchSummary(period: analysisService.selectedPeriod) }
                         }
@@ -84,11 +84,11 @@ struct DreamAnalysisView: View {
             .padding()
         }
         .halftoneBackground()
-        .navigationTitle("Dream Analysis")
+        .navigationTitle(L("Dream Analysis"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
-                Button("Done") { dismiss() }
+                Button(L("Done")) { dismiss() }
                     .foregroundStyle(ComicTheme.Colors.hotPink)
                     .fontWeight(.bold)
             }
@@ -152,13 +152,13 @@ struct DreamAnalysisView: View {
     @ViewBuilder
     private func summarySection(_ summary: AnalysisSummaryResponse) -> some View {
         // Most Common Feeling
-        ComicPanelCard(titleBanner: "Most Common Feeling", bannerColor: ComicTheme.Colors.boldBlue) {
+        ComicPanelCard(titleBanner: L("Most Common Feeling"), bannerColor: ComicTheme.Colors.boldBlue) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(summary.most_common_emotion.capitalized)
                         .font(.system(size: 24, weight: .black))
                         .foregroundColor(EmotionBadgeView.emotionColors[summary.most_common_emotion.lowercased()] ?? ComicTheme.Colors.boldBlue)
-                    Text(String(format: "Average intensity: %.0f%%", summary.most_common_intensity * 100))
+                    Text(L("Average intensity: %.0f%%", summary.most_common_intensity * 100))
                         .font(ComicTheme.Typography.speechBubble(12))
                         .foregroundColor(.secondary)
                 }
@@ -167,7 +167,7 @@ struct DreamAnalysisView: View {
                     Text("\(store.dreams.count)")
                         .font(.system(size: 36, weight: .black))
                         .foregroundColor(ComicTheme.Colors.boldBlue.opacity(0.3))
-                    Text("dreams")
+                    Text(L("dreams"))
                         .font(.system(size: 10, weight: .bold))
                         .foregroundColor(.secondary)
                 }
@@ -176,7 +176,7 @@ struct DreamAnalysisView: View {
 
         // Mood Distribution
         if !summary.mood_distribution.isEmpty {
-            ComicPanelCard(titleBanner: "Suggested Moods", bannerColor: ComicTheme.Colors.goldenYellow) {
+            ComicPanelCard(titleBanner: L("Suggested Moods"), bannerColor: ComicTheme.Colors.goldenYellow) {
                 Chart(summary.mood_distribution) { entry in
                     SectorMark(
                         angle: .value("Count", entry.count),
@@ -205,7 +205,7 @@ struct DreamAnalysisView: View {
 
         // Sparkline
         if let sparkline = summary.sparkline_data, !sparkline.isEmpty {
-            ComicPanelCard(titleBanner: "Activity", bannerColor: ComicTheme.Colors.emeraldGreen) {
+            ComicPanelCard(titleBanner: L("Activity"), bannerColor: ComicTheme.Colors.emeraldGreen) {
                 Chart(Array(sparkline.enumerated()), id: \.offset) { index, value in
                     LineMark(
                         x: .value("Day", index),
@@ -231,7 +231,7 @@ struct DreamAnalysisView: View {
 
     private var emptyTrendsView: some View {
         VStack(spacing: 8) {
-            Text("Keep logging dreams to see trends")
+            Text(L("Keep logging dreams to see trends"))
                 .font(ComicTheme.Typography.speechBubble(13))
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
@@ -243,9 +243,9 @@ struct DreamAnalysisView: View {
     private var emptyState: some View {
         ComicPanelCard(bannerColor: ComicTheme.Colors.deepPurple) {
             VStack(spacing: 16) {
-                SoundEffectText(text: "ZAP!", fillColor: ComicTheme.Colors.goldenYellow, fontSize: 36)
+                SoundEffectText(text: L("ZAP!"), fillColor: ComicTheme.Colors.goldenYellow, fontSize: 36)
 
-                Text("Record your first dream to start tracking your emotions")
+                Text(L("Record your first dream to start tracking your emotions"))
                     .font(ComicTheme.Typography.speechBubble())
                     .multilineTextAlignment(.center)
                     .speechBubble()
@@ -257,7 +257,7 @@ struct DreamAnalysisView: View {
 
     private func errorView(message: String, retry: @escaping () -> Void) -> some View {
         VStack(spacing: 12) {
-            SoundEffectText(text: "OOPS!", fillColor: ComicTheme.Colors.crimsonRed, fontSize: 20)
+            SoundEffectText(text: L("OOPS!"), fillColor: ComicTheme.Colors.crimsonRed, fontSize: 20)
 
             Text(message)
                 .font(ComicTheme.Typography.speechBubble(12))
@@ -267,7 +267,7 @@ struct DreamAnalysisView: View {
             Button {
                 retry()
             } label: {
-                Label("Retry", systemImage: "arrow.clockwise")
+                Label(L("Retry"), systemImage: "arrow.clockwise")
             }
             .buttonStyle(.comicSecondary)
         }

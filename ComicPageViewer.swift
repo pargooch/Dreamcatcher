@@ -47,7 +47,7 @@ struct ComicPageViewer: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") {
+                    Button(L("Done")) {
                         dismiss()
                     }
                     .foregroundColor(.white)
@@ -58,7 +58,7 @@ struct ComicPageViewer: View {
                        let uiImage = currentPage.uiImage {
                         ShareLink(
                             item: Image(uiImage: uiImage),
-                            preview: SharePreview("Dream Comic Page", image: Image(uiImage: uiImage))
+                            preview: SharePreview(L("Dream Comic Page"), image: Image(uiImage: uiImage))
                         ) {
                             Image(systemName: "square.and.arrow.up")
                                 .foregroundColor(.white)

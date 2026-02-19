@@ -188,7 +188,8 @@ class BackendService {
         let url = try makeURL(path: "/ai/dream-rewrite")
         var body: [String: Any] = [
             "text": text,
-            "mood_type": moodType
+            "mood_type": moodType,
+            "language": LocalizationManager.shared.currentLanguage
         ]
         if let model = model {
             body["model"] = model
@@ -288,7 +289,8 @@ class BackendService {
     func generateComicPage(rewrittenText: String, dreamerProfile: DreamerProfile? = nil) async throws -> ComicPageGenerationResponse {
         let url = try makeURL(path: "ai/generate-comic-page")
         var body: [String: Any] = [
-            "rewritten_text": rewrittenText
+            "rewritten_text": rewrittenText,
+            "language": LocalizationManager.shared.currentLanguage
         ]
         if let profile = dreamerProfile {
             var profileDict: [String: Any] = [:]
@@ -358,7 +360,8 @@ class BackendService {
         formatter.formatOptions = [.withInternetDateTime]
         let body: [String: Any] = [
             "text": text,
-            "dream_date": formatter.string(from: dreamDate)
+            "dream_date": formatter.string(from: dreamDate),
+            "language": LocalizationManager.shared.currentLanguage
         ]
         let data = try JSONSerialization.data(withJSONObject: body)
         let request = try makeRequest(url: url, method: "POST", body: data, requiresAuth: true)

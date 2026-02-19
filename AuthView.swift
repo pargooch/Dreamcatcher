@@ -16,19 +16,19 @@ struct AuthView: View {
             VStack(spacing: ComicTheme.Dimensions.gutterWidth) {
                 // Title sound effect
                 SoundEffectText(
-                    text: isLoginMode ? "LOG IN!" : "SIGN UP!",
+                    text: isLoginMode ? L("LOG IN!") : L("SIGN UP!"),
                     fillColor: ComicTheme.Colors.boldBlue,
                     fontSize: 32
                 )
                 .padding(.top, 8)
 
                 // Credentials
-                ComicPanelCard(titleBanner: "Account", bannerColor: ComicTheme.Colors.boldBlue) {
+                ComicPanelCard(titleBanner: L("Account"), bannerColor: ComicTheme.Colors.boldBlue) {
                     VStack(spacing: 14) {
                         ComicTextField(
                             icon: "envelope.fill",
                             iconColor: ComicTheme.Colors.boldBlue,
-                            placeholder: "Email",
+                            placeholder: L("Email"),
                             text: $email,
                             keyboardType: .emailAddress
                         )
@@ -38,7 +38,7 @@ struct AuthView: View {
                         ComicSecureField(
                             icon: "lock.fill",
                             iconColor: ComicTheme.Colors.crimsonRed,
-                            placeholder: "Password",
+                            placeholder: L("Password"),
                             text: $password
                         )
                     }
@@ -46,14 +46,14 @@ struct AuthView: View {
 
                 // Profile fields (sign up only)
                 if !isLoginMode {
-                    ComicPanelCard(titleBanner: "Profile", bannerColor: ComicTheme.Colors.deepPurple) {
+                    ComicPanelCard(titleBanner: L("Profile"), bannerColor: ComicTheme.Colors.deepPurple) {
                         VStack(spacing: 14) {
                             GenderPicker(selection: $gender)
 
                             ComicTextField(
                                 icon: "number",
                                 iconColor: ComicTheme.Colors.goldenYellow,
-                                placeholder: "Age",
+                                placeholder: L("Age"),
                                 text: $ageString,
                                 keyboardType: .numberPad
                             )
@@ -61,7 +61,7 @@ struct AuthView: View {
                             ComicTextField(
                                 icon: "globe",
                                 iconColor: ComicTheme.Colors.emeraldGreen,
-                                placeholder: "Timezone (e.g., \(TimeZone.current.identifier))",
+                                placeholder: L("Timezone (e.g., %@)", TimeZone.current.identifier),
                                 text: $timezone
                             )
                             .textInputAutocapitalization(.never)
@@ -73,7 +73,7 @@ struct AuthView: View {
                 // Submit
                 if authManager.isLoading {
                     VStack(spacing: 12) {
-                        SoundEffectText(text: "LOADING!", fillColor: ComicTheme.Colors.boldBlue, fontSize: 20)
+                        SoundEffectText(text: L("LOADING!"), fillColor: ComicTheme.Colors.boldBlue, fontSize: 20)
                         ProgressView()
                             .tint(ComicTheme.Colors.boldBlue)
                     }
@@ -84,7 +84,7 @@ struct AuthView: View {
                         }
                     } label: {
                         Label(
-                            isLoginMode ? "Log In" : "Create Account",
+                            isLoginMode ? L("Log In") : L("Create Account"),
                             systemImage: isLoginMode ? "arrow.right.circle.fill" : "person.badge.plus"
                         )
                     }
@@ -95,10 +95,10 @@ struct AuthView: View {
 
                 // Toggle mode
                 HStack(spacing: 6) {
-                    Text(isLoginMode ? "Need an account?" : "Have an account?")
+                    Text(isLoginMode ? L("Need an account?") : L("Have an account?"))
                         .font(ComicTheme.Typography.speechBubble(14))
                         .foregroundColor(.secondary)
-                    Button(isLoginMode ? "Sign Up" : "Log In") {
+                    Button(isLoginMode ? L("Sign Up") : L("Log In")) {
                         withAnimation(.spring(response: 0.3)) {
                             isLoginMode.toggle()
                         }
@@ -119,7 +119,7 @@ struct AuthView: View {
             .padding()
         }
         .halftoneBackground()
-        .navigationTitle(isLoginMode ? "Log In" : "Sign Up")
+        .navigationTitle(isLoginMode ? L("Log In") : L("Sign Up"))
         .navigationBarTitleDisplayMode(.inline)
     }
 

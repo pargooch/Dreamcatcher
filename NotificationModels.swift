@@ -12,23 +12,23 @@ enum NotificationCategory: String, Codable, CaseIterable, Identifiable {
 
     var displayName: String {
         switch self {
-        case .generalReminder: return "Daily Check-in"
-        case .dreamReflection: return "Dream Reflection"
-        case .nightmareFollowUp: return "Nightmare Follow-up"
-        case .weeklyDigest: return "Weekly Digest"
+        case .generalReminder: return L("Daily Check-in")
+        case .dreamReflection: return L("Dream Reflection")
+        case .nightmareFollowUp: return L("Nightmare Follow-up")
+        case .weeklyDigest: return L("Weekly Digest")
         }
     }
 
     var description: String {
         switch self {
         case .generalReminder:
-            return "Gentle reminder to log your dreams"
+            return L("Gentle reminder to log your dreams")
         case .dreamReflection:
-            return "Reflect on dreams you've recorded"
+            return L("Reflect on dreams you've recorded")
         case .nightmareFollowUp:
-            return "Check in after rewriting a nightmare"
+            return L("Check in after rewriting a nightmare")
         case .weeklyDigest:
-            return "Weekly summary of your dream journey"
+            return L("Weekly summary of your dream journey")
         }
     }
 
@@ -141,11 +141,11 @@ enum NotificationFrequency: String, Codable, CaseIterable, Identifiable {
 
     var displayName: String {
         switch self {
-        case .daily: return "Every Day"
-        case .weekdays: return "Weekdays Only"
-        case .weekends: return "Weekends Only"
-        case .weekly: return "Once a Week"
-        case .custom: return "Custom Days"
+        case .daily: return L("Every Day")
+        case .weekdays: return L("Weekdays Only")
+        case .weekends: return L("Weekends Only")
+        case .weekly: return L("Once a Week")
+        case .custom: return L("Custom Days")
         }
     }
 }

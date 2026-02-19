@@ -24,7 +24,7 @@ struct ContentView: View {
                     if store.dreams.isEmpty {
                         emptyState
                     } else if filteredDreams.isEmpty {
-                        Text("No dreams match your search")
+                        Text(L("No dreams match your search"))
                             .font(ComicTheme.Typography.speechBubble(13))
                             .foregroundColor(.secondary)
                             .padding(.top, 40)
@@ -49,8 +49,8 @@ struct ContentView: View {
                 .padding()
             }
             .halftoneBackground()
-            .navigationTitle("Dreams")
-            .searchable(text: $searchText, prompt: "Search dreams...")
+            .navigationTitle(L("Dreams"))
+            .searchable(text: $searchText, prompt: Text(L("Search dreams...")))
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     HStack(spacing: 12) {
@@ -100,11 +100,11 @@ struct ContentView: View {
     }
 
     private var emptyState: some View {
-        ComicPanelCard(titleBanner: "Welcome, Dreamer!", bannerColor: ComicTheme.Colors.deepPurple) {
+        ComicPanelCard(titleBanner: L("Welcome, Dreamer!"), bannerColor: ComicTheme.Colors.deepPurple) {
             VStack(spacing: 16) {
-                SoundEffectText(text: "DREAM ON!", fillColor: ComicTheme.Colors.goldenYellow, fontSize: 42)
+                SoundEffectText(text: L("DREAM ON!"), fillColor: ComicTheme.Colors.goldenYellow, fontSize: 42)
 
-                Text("Record your first dream to begin your comic journey!")
+                Text(L("Record your first dream to begin your comic journey!"))
                     .font(ComicTheme.Typography.speechBubble())
                     .multilineTextAlignment(.center)
                     .speechBubble()
@@ -112,7 +112,7 @@ struct ContentView: View {
                 Button {
                     showNewDream = true
                 } label: {
-                    Label("Capture a Dream", systemImage: "moon.stars.fill")
+                    Label(L("Capture a Dream"), systemImage: "moon.stars.fill")
                 }
                 .buttonStyle(.comicPrimary(color: ComicTheme.Colors.deepPurple))
             }
@@ -232,7 +232,7 @@ struct SwipeToDeleteWrapper<Content: View>: View {
                     VStack(spacing: 4) {
                         Image(systemName: "trash.fill")
                             .font(.system(size: 20, weight: .bold))
-                        Text("DELETE")
+                        Text(L("DELETE"))
                             .font(.system(size: 10, weight: .black))
                     }
                     .foregroundColor(.white)

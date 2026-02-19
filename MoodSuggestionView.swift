@@ -16,12 +16,12 @@ struct MoodSuggestionView: View {
 
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 0) {
-                        Text("We suggest rewriting this as a ")
+                        Text(L("We suggest rewriting this as a "))
                             .font(ComicTheme.Typography.speechBubble(13))
-                        Text(suggestedMood.mood.capitalized)
+                        Text(L(suggestedMood.mood.capitalized))
                             .font(.system(size: 13, weight: .bold))
                             .foregroundColor(ComicTheme.Colors.boldBlue)
-                        Text(" dream")
+                        Text(L(" dream"))
                             .font(ComicTheme.Typography.speechBubble(13))
                     }
                     .foregroundColor(.primary)

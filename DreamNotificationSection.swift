@@ -12,7 +12,7 @@ struct DreamNotificationSection: View {
     @State private var reminders: [DreamNotification] = []
 
     var body: some View {
-        ComicPanelCard(titleBanner: "Reminders", bannerColor: ComicTheme.Colors.emeraldGreen) {
+        ComicPanelCard(titleBanner: L("Reminders"), bannerColor: ComicTheme.Colors.emeraldGreen) {
             VStack(alignment: .leading, spacing: 16) {
                 HStack {
                     Image(systemName: "bell.fill")
@@ -31,10 +31,10 @@ struct DreamNotificationSection: View {
 
                 if reminders.isEmpty {
                     VStack(spacing: 8) {
-                        Text("No reminders set")
+                        Text(L("No reminders set"))
                             .font(ComicTheme.Typography.comicButton(14))
                             .foregroundColor(.secondary)
-                        Text("Add a reminder to revisit this dream")
+                        Text(L("Add a reminder to revisit this dream"))
                             .font(ComicTheme.Typography.speechBubble(12))
                             .foregroundColor(.secondary)
                     }
@@ -108,7 +108,7 @@ struct DreamReminderRow: View {
                     .foregroundColor(isExpired ? .secondary : .primary)
 
                 if isExpired {
-                    Text("EXPIRED")
+                    Text(L("EXPIRED"))
                         .font(.system(size: 10, weight: .bold))
                         .tracking(0.5)
                         .foregroundColor(ComicTheme.Colors.crimsonRed)
@@ -213,7 +213,7 @@ struct AddDreamReminderSheet: View {
                         }
                     }
                 } header: {
-                    Text("REMINDER TYPE")
+                    Text(L("REMINDER TYPE"))
                         .font(ComicTheme.Typography.sectionHeader(11))
                         .tracking(1)
                 }
@@ -241,7 +241,7 @@ struct AddDreamReminderSheet: View {
                         selectedTime = .custom
                     } label: {
                         HStack {
-                            Text("Custom")
+                            Text(L("Custom"))
                                 .foregroundColor(.primary)
                             Spacer()
                             if selectedTime == .custom {
@@ -253,14 +253,14 @@ struct AddDreamReminderSheet: View {
 
                     if selectedTime == .custom {
                         DatePicker(
-                            "Date & Time",
+                            L("Date & Time"),
                             selection: $customDate,
                             in: Date()...,
                             displayedComponents: [.date, .hourAndMinute]
                         )
                     }
                 } header: {
-                    Text("WHEN")
+                    Text(L("WHEN"))
                         .font(ComicTheme.Typography.sectionHeader(11))
                         .tracking(1)
                 }
@@ -270,24 +270,24 @@ struct AddDreamReminderSheet: View {
                         .font(.callout)
                         .foregroundColor(.secondary)
                 } header: {
-                    Text("PREVIEW")
+                    Text(L("PREVIEW"))
                         .font(ComicTheme.Typography.sectionHeader(11))
                         .tracking(1)
                 }
             }
-            .navigationTitle("Add Reminder")
+            .navigationTitle(L("Add Reminder"))
             .navigationBarTitleDisplayMode(.inline)
             .tint(ComicTheme.Colors.boldBlue)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                    Button(L("Cancel")) {
                         dismiss()
                     }
                     .foregroundStyle(ComicTheme.Colors.crimsonRed)
                     .fontWeight(.bold)
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Add") {
+                    Button(L("Add")) {
                         addReminder()
                     }
                     .foregroundStyle(ComicTheme.Colors.emeraldGreen)
@@ -306,7 +306,7 @@ struct AddDreamReminderSheet: View {
             ? customDate
             : Date().addingTimeInterval(TimeInterval(selectedTime.hours * 3600))
 
-        return "You'll receive a \"\(selectedType.displayName)\" reminder on \(dateFormatter.string(from: date))"
+        return L("You'll receive a \"%@\" reminder on %@", selectedType.displayName, dateFormatter.string(from: date))
     }
 
     private func addReminder() {

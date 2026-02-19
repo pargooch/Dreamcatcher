@@ -32,13 +32,13 @@ struct AvatarPickerView: View {
                             .overlay(Circle().stroke(ComicTheme.Colors.boldBlue, lineWidth: 3))
 
                         if isUploading {
-                            ProgressView("Uploading...")
+                            ProgressView(L("Uploading..."))
                                 .tint(ComicTheme.Colors.boldBlue)
                         } else {
                             Button {
                                 useSelectedImage()
                             } label: {
-                                Label("Use This Photo", systemImage: "checkmark.circle.fill")
+                                Label(L("Use This Photo"), systemImage: "checkmark.circle.fill")
                                     .frame(maxWidth: .infinity)
                             }
                             .buttonStyle(.borderedProminent)
@@ -51,14 +51,14 @@ struct AvatarPickerView: View {
                         Button {
                             showMemojiBridge = true
                         } label: {
-                            Label("Use Memoji", systemImage: "face.smiling")
+                            Label(L("Use Memoji"), systemImage: "face.smiling")
                                 .frame(maxWidth: .infinity)
                         }
                         .buttonStyle(.borderedProminent)
                         .tint(ComicTheme.Colors.boldBlue)
 
                         PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
-                            Label("Choose Photo", systemImage: "photo.on.rectangle")
+                            Label(L("Choose Photo"), systemImage: "photo.on.rectangle")
                                 .frame(maxWidth: .infinity)
                         }
                         .buttonStyle(.bordered)
@@ -67,7 +67,7 @@ struct AvatarPickerView: View {
                         Button {
                             showCamera = true
                         } label: {
-                            Label("Take Photo", systemImage: "camera")
+                            Label(L("Take Photo"), systemImage: "camera")
                                 .frame(maxWidth: .infinity)
                         }
                         .buttonStyle(.bordered)
@@ -77,7 +77,7 @@ struct AvatarPickerView: View {
                             Button(role: .destructive) {
                                 removeAvatar()
                             } label: {
-                                Label("Remove Avatar", systemImage: "trash")
+                                Label(L("Remove Avatar"), systemImage: "trash")
                                     .frame(maxWidth: .infinity)
                             }
                             .buttonStyle(.bordered)
@@ -89,7 +89,7 @@ struct AvatarPickerView: View {
                 HStack(alignment: .top, spacing: 8) {
                     Image(systemName: "lock.shield")
                         .foregroundColor(.secondary)
-                    Text("Your photo creates a text description of your appearance. The photo itself is not shared with AI services.")
+                    Text(L("Your photo creates a text description of your appearance. The photo itself is not shared with AI services."))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -106,11 +106,11 @@ struct AvatarPickerView: View {
                 Spacer()
             }
             .padding()
-            .navigationTitle("Profile Picture")
+            .navigationTitle(L("Profile Picture"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                    Button(L("Cancel")) {
                         dismiss()
                     }
                 }
@@ -223,10 +223,10 @@ struct MemojiBridgeView: View {
                     .font(.system(size: 60))
                     .foregroundColor(ComicTheme.Colors.boldBlue)
 
-                Text("Paste Your Memoji")
+                Text(L("Paste Your Memoji"))
                     .font(ComicTheme.Typography.dreamTitle(24))
 
-                Text("1. Tap the text field below\n2. Switch to the Memoji keyboard\n3. Tap your favorite Memoji sticker")
+                Text(L("1. Tap the text field below\n2. Switch to the Memoji keyboard\n3. Tap your favorite Memoji sticker"))
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
@@ -240,11 +240,11 @@ struct MemojiBridgeView: View {
 
                 Spacer()
             }
-            .navigationTitle("Memoji")
+            .navigationTitle(L("Memoji"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                    Button(L("Cancel")) {
                         dismiss()
                     }
                 }
@@ -261,7 +261,7 @@ struct PasteableTextFieldWrapper: UIViewRepresentable {
     func makeUIView(context: Context) -> PasteableTextField {
         let textField = PasteableTextField()
         textField.onImagePasted = onImagePasted
-        textField.placeholder = "Tap here, then paste Memoji..."
+        textField.placeholder = L("Tap here, then paste Memoji...")
         textField.textAlignment = .center
         textField.borderStyle = .roundedRect
         textField.font = .systemFont(ofSize: 16)

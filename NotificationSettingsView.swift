@@ -12,7 +12,7 @@ struct NotificationSettingsView: View {
                     HStack {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundColor(.green)
-                        Text("Notifications Enabled")
+                        Text(L("Notifications Enabled"))
                         Spacer()
                     }
                 } else {
@@ -27,7 +27,7 @@ struct NotificationSettingsView: View {
                         HStack {
                             Image(systemName: "bell.badge")
                                 .foregroundColor(.orange)
-                            Text("Enable Notifications")
+                            Text(L("Enable Notifications"))
                             Spacer()
                             Image(systemName: "chevron.right")
                                 .foregroundColor(.secondary)
@@ -35,10 +35,10 @@ struct NotificationSettingsView: View {
                     }
                 }
             } header: {
-                Text("Permission")
+                Text(L("Permission"))
             } footer: {
                 if !notificationManager.isAuthorized {
-                    Text("Allow notifications to receive reminders and follow-ups.")
+                    Text(L("Allow notifications to receive reminders and follow-ups."))
                 }
             }
 
@@ -48,22 +48,22 @@ struct NotificationSettingsView: View {
                     NotificationTemplateRow(category: category)
                 }
             } header: {
-                Text("Notification Types")
+                Text(L("Notification Types"))
             } footer: {
-                Text("Configure each notification type independently with its own schedule.")
+                Text(L("Configure each notification type independently with its own schedule."))
             }
         }
-        .navigationTitle("Notifications")
+        .navigationTitle(L("Notifications"))
         .navigationBarTitleDisplayMode(.inline)
-        .alert("Permission Required", isPresented: $showingPermissionAlert) {
-            Button("Open Settings") {
+        .alert(L("Permission Required"), isPresented: $showingPermissionAlert) {
+            Button(L("Open Settings")) {
                 if let url = URL(string: UIApplication.openSettingsURLString) {
                     UIApplication.shared.open(url)
                 }
             }
-            Button("Cancel", role: .cancel) { }
+            Button(L("Cancel"), role: .cancel) { }
         } message: {
-            Text("Please enable notifications in Settings to receive reminders.")
+            Text(L("Please enable notifications in Settings to receive reminders."))
         }
     }
 }
@@ -156,37 +156,39 @@ struct ScheduleEditorView: View {
     @State private var selectedDays: Set<Int> = []
     @State private var weeklyDay: Int = 2
 
-    private let dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+    private var dayNames: [String] {
+        [L("Sun"), L("Mon"), L("Tue"), L("Wed"), L("Thu"), L("Fri"), L("Sat")]
+    }
 
     var body: some View {
         NavigationView {
             Form {
                 Section {
-                    Picker("Frequency", selection: $frequency) {
+                    Picker(L("Frequency"), selection: $frequency) {
                         ForEach(NotificationFrequency.allCases) { freq in
                             Text(freq.displayName).tag(freq)
                         }
                     }
                 } header: {
-                    Text("When to Notify")
+                    Text(L("When to Notify"))
                 }
 
                 Section {
-                    DatePicker("Time", selection: $time, displayedComponents: .hourAndMinute)
+                    DatePicker(L("Time"), selection: $time, displayedComponents: .hourAndMinute)
                 } header: {
-                    Text("Time of Day")
+                    Text(L("Time of Day"))
                 }
 
                 if frequency == .weekly {
                     Section {
-                        Picker("Day", selection: $weeklyDay) {
+                        Picker(L("Day"), selection: $weeklyDay) {
                             ForEach(1...7, id: \.self) { day in
                                 Text(dayNames[day - 1]).tag(day)
                             }
                         }
                         .pickerStyle(.segmented)
                     } header: {
-                        Text("Day of Week")
+                        Text(L("Day of Week"))
                     }
                 }
 
@@ -208,7 +210,7 @@ struct ScheduleEditorView: View {
                             }
                         }
                     } header: {
-                        Text("Select Days")
+                        Text(L("Select Days"))
                     }
                 }
 
@@ -217,19 +219,19 @@ struct ScheduleEditorView: View {
                         .font(.callout)
                         .foregroundColor(.secondary)
                 } header: {
-                    Text("Preview")
+                    Text(L("Preview"))
                 }
             }
             .navigationTitle(category.displayName)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                    Button(L("Cancel")) {
                         dismiss()
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
+                    Button(L("Save")) {
                         saveSchedule()
                         dismiss()
                     }
@@ -248,19 +250,19 @@ struct ScheduleEditorView: View {
 
         switch frequency {
         case .daily:
-            return "You'll receive a notification every day at \(timeString)."
+            return L("You'll receive a notification every day at %@.", timeString)
         case .weekdays:
-            return "You'll receive notifications Monday through Friday at \(timeString)."
+            return L("You'll receive notifications Monday through Friday at %@.", timeString)
         case .weekends:
-            return "You'll receive notifications on Saturday and Sunday at \(timeString)."
+            return L("You'll receive notifications on Saturday and Sunday at %@.", timeString)
         case .weekly:
-            return "You'll receive a notification every \(dayNames[weeklyDay - 1]) at \(timeString)."
+            return L("You'll receive a notification every %@ at %@.", dayNames[weeklyDay - 1], timeString)
         case .custom:
             if selectedDays.isEmpty {
-                return "Select at least one day to receive notifications."
+                return L("Select at least one day to receive notifications.")
             }
             let dayList = selectedDays.sorted().map { dayNames[$0 - 1] }.joined(separator: ", ")
-            return "You'll receive notifications on \(dayList) at \(timeString)."
+            return L("You'll receive notifications on %@ at %@.", dayList, timeString)
         }
     }
 

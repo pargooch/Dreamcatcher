@@ -13,7 +13,7 @@ struct NewDreamView: View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 20) {
-                    Text("What did you dream?")
+                    Text(L("What did you dream?"))
                         .font(ComicTheme.Typography.speechBubble())
                         .speechBubble()
                         .padding(.top)
@@ -21,7 +21,7 @@ struct NewDreamView: View {
                     ComicPanelCard(bannerColor: ComicTheme.Colors.deepPurple) {
                         ZStack(alignment: .topLeading) {
                             if dreamText.isEmpty && !speechService.isRecording {
-                                Text("Describe your dream or nightmare...")
+                                Text(L("Describe your dream or nightmare..."))
                                     .foregroundColor(.secondary)
                                     .padding(.top, 8)
                                     .padding(.leading, 5)
@@ -45,17 +45,17 @@ struct NewDreamView: View {
                         }
                     } label: {
                         Label(
-                            speechService.isRecording ? "Stop Recording" : "Record Dream",
+                            speechService.isRecording ? L("Stop Recording") : L("Record Dream"),
                             systemImage: speechService.isRecording ? "stop.circle.fill" : "mic.circle.fill"
                         )
                     }
                     .buttonStyle(.comicPrimary(color: speechService.isRecording ? ComicTheme.Colors.crimsonRed : ComicTheme.Colors.deepPurple))
-                    .accessibilityHint(speechService.isRecording ? "Tap to stop voice recording" : "Tap to start describing your dream with your voice")
+                    .accessibilityHint(speechService.isRecording ? L("Tap to stop voice recording") : L("Tap to start describing your dream with your voice"))
 
                     if speechService.isRecording {
                         HStack(spacing: 8) {
                             PulsingDot()
-                            Text("Listening...")
+                            Text(L("Listening..."))
                                 .font(ComicTheme.Typography.speechBubble(13))
                                 .foregroundColor(.secondary)
                         }
@@ -71,7 +71,7 @@ struct NewDreamView: View {
                     // Dream date picker
                     ComicPanelCard(bannerColor: ComicTheme.Colors.goldenYellow) {
                         DatePicker(
-                            "When did you see this dream?",
+                            L("When did you see this dream?"),
                             selection: $dreamDate,
                             in: ...Date(),
                             displayedComponents: .date
@@ -99,7 +99,7 @@ struct NewDreamView: View {
                         }
                         dismiss()
                     } label: {
-                        Label("Save Dream", systemImage: "checkmark.circle.fill")
+                        Label(L("Save Dream"), systemImage: "checkmark.circle.fill")
                     }
                     .buttonStyle(.comicPrimary(color: ComicTheme.Colors.boldBlue))
                     .disabled(dreamText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -107,11 +107,11 @@ struct NewDreamView: View {
                 .padding()
             }
             .halftoneBackground()
-            .navigationTitle("New Dream")
+            .navigationTitle(L("New Dream"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                    Button(L("Cancel")) {
                         dismiss()
                     }
                     .foregroundStyle(ComicTheme.Colors.crimsonRed)

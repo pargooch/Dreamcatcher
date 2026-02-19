@@ -94,7 +94,7 @@ struct TrendChartView: View {
 
             if dataPoints.isEmpty {
                 VStack(spacing: 8) {
-                    Text("Keep logging dreams to see trends")
+                    Text(L("Keep logging dreams to see trends"))
                         .font(ComicTheme.Typography.speechBubble(13))
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)

@@ -7,7 +7,7 @@ struct SettingsView: View {
         ScrollView {
             VStack(spacing: ComicTheme.Dimensions.gutterWidth) {
                 // Account section
-                ComicPanelCard(titleBanner: "Account", bannerColor: ComicTheme.Colors.deepPurple) {
+                ComicPanelCard(titleBanner: L("Account"), bannerColor: ComicTheme.Colors.deepPurple) {
                     if authManager.isAuthenticated {
                         NavigationLink {
                             AccountView()
@@ -17,10 +17,10 @@ struct SettingsView: View {
                                     .font(.title2.weight(.bold))
                                     .foregroundColor(ComicTheme.Colors.deepPurple)
                                 VStack(alignment: .leading, spacing: 3) {
-                                    Text(authManager.userEmail ?? "Signed in")
+                                    Text(authManager.userEmail ?? L("Signed in"))
                                         .font(ComicTheme.Typography.comicButton(14))
                                         .foregroundColor(.primary)
-                                    Text("Cloud sync enabled")
+                                    Text(L("Cloud sync enabled"))
                                         .font(ComicTheme.Typography.speechBubble(12))
                                         .foregroundColor(ComicTheme.Colors.emeraldGreen)
                                 }
@@ -40,10 +40,10 @@ struct SettingsView: View {
                                     .font(.title2.weight(.bold))
                                     .foregroundColor(ComicTheme.Colors.boldBlue)
                                 VStack(alignment: .leading, spacing: 3) {
-                                    Text("Sign In / Sign Up")
+                                    Text(L("Sign In / Sign Up"))
                                         .font(ComicTheme.Typography.comicButton(14))
                                         .foregroundColor(.primary)
-                                    Text("Create an account to sync dreams and AI content.")
+                                    Text(L("Create an account to sync dreams and AI content."))
                                         .font(ComicTheme.Typography.speechBubble(12))
                                         .foregroundColor(.secondary)
                                 }
@@ -58,7 +58,7 @@ struct SettingsView: View {
                 }
 
                 // Notifications section
-                ComicPanelCard(titleBanner: "Notifications", bannerColor: ComicTheme.Colors.emeraldGreen) {
+                ComicPanelCard(titleBanner: L("Notifications"), bannerColor: ComicTheme.Colors.emeraldGreen) {
                     NavigationLink {
                         NotificationSettingsView()
                     } label: {
@@ -66,7 +66,7 @@ struct SettingsView: View {
                             Image(systemName: "bell.badge.fill")
                                 .font(.title3.weight(.bold))
                                 .foregroundColor(ComicTheme.Colors.goldenYellow)
-                            Text("Notification Settings")
+                            Text(L("Notification Settings"))
                                 .font(ComicTheme.Typography.comicButton(14))
                                 .foregroundColor(.primary)
                             Spacer()
@@ -77,11 +77,14 @@ struct SettingsView: View {
                     }
                     .buttonStyle(.plain)
                 }
+
+                // Language section
+                LanguagePickerSection()
             }
             .padding()
         }
         .halftoneBackground()
-        .navigationTitle("Settings")
+        .navigationTitle(L("Settings"))
         .navigationBarTitleDisplayMode(.inline)
     }
 }
@@ -104,20 +107,20 @@ struct AccountView: View {
         ScrollView {
             VStack(spacing: ComicTheme.Dimensions.gutterWidth) {
                 // Profile card
-                ComicPanelCard(titleBanner: "Profile", bannerColor: ComicTheme.Colors.deepPurple) {
+                ComicPanelCard(titleBanner: L("Profile"), bannerColor: ComicTheme.Colors.deepPurple) {
                     HStack(spacing: 14) {
                         ProfilePictureView(size: 60, editable: true) {
                             showAvatarPicker = true
                         }
 
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(authManager.userEmail ?? "Signed in")
+                            Text(authManager.userEmail ?? L("Signed in"))
                                 .font(ComicTheme.Typography.comicButton(14))
                             if authManager.isCloudEnabled {
                                 HStack(spacing: 4) {
                                     Image(systemName: "checkmark.circle.fill")
                                         .font(.caption2)
-                                    Text("Cloud sync enabled")
+                                    Text(L("Cloud sync enabled"))
                                 }
                                 .font(ComicTheme.Typography.speechBubble(12))
                                 .foregroundColor(ComicTheme.Colors.emeraldGreen)
@@ -128,9 +131,9 @@ struct AccountView: View {
                 }
 
                 // Dream Character profile
-                ComicPanelCard(titleBanner: "Dream Character", bannerColor: ComicTheme.Colors.hotPink) {
+                ComicPanelCard(titleBanner: L("Dream Character"), bannerColor: ComicTheme.Colors.hotPink) {
                     VStack(spacing: 14) {
-                        Text("These details personalize your dream comics")
+                        Text(L("These details personalize your dream comics"))
                             .font(ComicTheme.Typography.speechBubble(12))
                             .foregroundColor(.secondary)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -140,7 +143,7 @@ struct AccountView: View {
                         ComicTextField(
                             icon: "number",
                             iconColor: ComicTheme.Colors.goldenYellow,
-                            placeholder: "Age",
+                            placeholder: L("Age"),
                             text: $ageString,
                             keyboardType: .numberPad
                         )
@@ -173,7 +176,7 @@ struct AccountView: View {
                                     ProgressView()
                                         .tint(.white)
                                 } else {
-                                    Label("Save", systemImage: "checkmark.circle.fill")
+                                    Label(L("Save"), systemImage: "checkmark.circle.fill")
                                 }
                             }
                             .buttonStyle(.comicPrimary(color: ComicTheme.Colors.hotPink))
@@ -186,7 +189,7 @@ struct AccountView: View {
                 Button(role: .destructive) {
                     authManager.logout()
                 } label: {
-                    Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                    Label(L("Sign Out"), systemImage: "rectangle.portrait.and.arrow.right")
                 }
                 .buttonStyle(.comicDestructive)
             }
@@ -214,6 +217,48 @@ struct AccountView: View {
     }
 }
 
+// MARK: - Language Picker Section
+
+struct LanguagePickerSection: View {
+    @State private var localization = LocalizationManager.shared
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        ComicPanelCard(titleBanner: L("Language"), bannerColor: ComicTheme.Colors.boldBlue) {
+            VStack(spacing: 8) {
+                ForEach(LocalizationManager.supportedLanguages) { lang in
+                    Button {
+                        localization.currentLanguage = lang.code
+                    } label: {
+                        HStack(spacing: 12) {
+                            Text(lang.nativeName)
+                                .font(ComicTheme.Typography.comicButton(14))
+                                .foregroundColor(.primary)
+                            Text(lang.name)
+                                .font(ComicTheme.Typography.speechBubble(12))
+                                .foregroundColor(.secondary)
+                            Spacer()
+                            if localization.currentLanguage == lang.code {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(ComicTheme.Colors.boldBlue)
+                            }
+                        }
+                        .padding(.vertical, 6)
+                        .padding(.horizontal, 12)
+                        .background(
+                            localization.currentLanguage == lang.code
+                                ? ComicTheme.Colors.boldBlue.opacity(0.1)
+                                : Color.clear
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: ComicTheme.Dimensions.buttonCornerRadius))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+}
+
 // MARK: - Gender Picker
 
 struct GenderPicker: View {
@@ -235,7 +280,7 @@ struct GenderPicker: View {
                         selection = option
                     } label: {
                         HStack {
-                            Text(option)
+                            Text(L(option))
                             if selection == option {
                                 Image(systemName: "checkmark")
                             }
@@ -244,7 +289,7 @@ struct GenderPicker: View {
                 }
             } label: {
                 HStack {
-                    Text(selection.isEmpty ? "Gender" : selection)
+                    Text(selection.isEmpty ? L("Gender") : L(selection))
                         .font(ComicTheme.Typography.speechBubble())
                         .foregroundColor(selection.isEmpty ? .secondary : .primary)
                     Spacer()

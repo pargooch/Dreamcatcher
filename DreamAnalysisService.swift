@@ -22,10 +22,10 @@ final class DreamAnalysisService {
 
         var displayName: String {
             switch self {
-            case .sevenDays: return "7 Days"
-            case .thirtyDays: return "30 Days"
-            case .ninetyDays: return "90 Days"
-            case .all: return "All"
+            case .sevenDays: return L("7 Days")
+            case .thirtyDays: return L("30 Days")
+            case .ninetyDays: return L("90 Days")
+            case .all: return L("All")
             }
         }
     }
