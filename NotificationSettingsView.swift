@@ -3,56 +3,66 @@ import SwiftUI
 struct NotificationSettingsView: View {
     @StateObject private var notificationManager = NotificationManager.shared
     @State private var showingPermissionAlert = false
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        List {
-            // Authorization Section
-            Section {
-                if notificationManager.isAuthorized {
-                    HStack {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.green)
-                        Text(L("Notifications Enabled"))
-                        Spacer()
+        ScrollView {
+            VStack(spacing: ComicTheme.Dimensions.gutterWidth) {
+                // Permission section
+                ComicPanelCard(titleBanner: L("Permission"), bannerColor: ComicTheme.Colors.emeraldGreen) {
+                    if notificationManager.isAuthorized {
+                        HStack(spacing: 12) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.title3.weight(.bold))
+                                .foregroundColor(ComicTheme.Colors.emeraldGreen)
+                            Text(L("Notifications Enabled"))
+                                .font(ComicTheme.Typography.comicButton(14))
+                                .foregroundColor(.primary)
+                            Spacer()
+                        }
+                    } else {
+                        VStack(spacing: 12) {
+                            Button {
+                                Task {
+                                    let granted = await notificationManager.requestAuthorization()
+                                    if !granted {
+                                        showingPermissionAlert = true
+                                    }
+                                }
+                            } label: {
+                                Label(L("Enable Notifications"), systemImage: "bell.badge")
+                            }
+                            .buttonStyle(.comicPrimary(color: ComicTheme.Colors.emeraldGreen))
+
+                            Text(L("Allow notifications to receive reminders and follow-ups."))
+                                .font(ComicTheme.Typography.speechBubble(12))
+                                .foregroundColor(.secondary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
                     }
-                } else {
-                    Button {
-                        Task {
-                            let granted = await notificationManager.requestAuthorization()
-                            if !granted {
-                                showingPermissionAlert = true
+                }
+
+                // Notification Types section
+                ComicPanelCard(titleBanner: L("Notification Types"), bannerColor: ComicTheme.Colors.boldBlue) {
+                    VStack(spacing: 14) {
+                        Text(L("Configure each notification type independently with its own schedule."))
+                            .font(ComicTheme.Typography.speechBubble(12))
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+
+                        ForEach(NotificationCategory.allCases) { category in
+                            NotificationTemplateRow(category: category)
+
+                            if category != NotificationCategory.allCases.last {
+                                Divider()
                             }
                         }
-                    } label: {
-                        HStack {
-                            Image(systemName: "bell.badge")
-                                .foregroundColor(.orange)
-                            Text(L("Enable Notifications"))
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .foregroundColor(.secondary)
-                        }
                     }
                 }
-            } header: {
-                Text(L("Permission"))
-            } footer: {
-                if !notificationManager.isAuthorized {
-                    Text(L("Allow notifications to receive reminders and follow-ups."))
-                }
             }
-
-            // Notification Templates Section
-            Section {
-                ForEach(NotificationCategory.allCases) { category in
-                    NotificationTemplateRow(category: category)
-                }
-            } header: {
-                Text(L("Notification Types"))
-            } footer: {
-                Text(L("Configure each notification type independently with its own schedule."))
-            }
+            .padding()
         }
+        .halftoneBackground()
         .navigationTitle(L("Notifications"))
         .navigationBarTitleDisplayMode(.inline)
         .alert(L("Permission Required"), isPresented: $showingPermissionAlert) {
@@ -91,9 +101,9 @@ struct NotificationTemplateRow: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(category.displayName)
-                        .font(.headline)
+                        .font(ComicTheme.Typography.comicButton(14))
                     Text(category.description)
-                        .font(.caption)
+                        .font(ComicTheme.Typography.speechBubble(12))
                         .foregroundColor(.secondary)
                 }
 
@@ -116,16 +126,20 @@ struct NotificationTemplateRow: View {
                         Image(systemName: "clock")
                             .font(.caption)
                         Text(scheduleDescription(schedule))
-                            .font(.caption)
+                            .font(ComicTheme.Typography.speechBubble(12))
                         Spacer()
                         Image(systemName: "chevron.right")
                             .font(.caption2)
                     }
                     .foregroundColor(.secondary)
-                    .padding(.vertical, 4)
-                    .padding(.horizontal, 8)
+                    .padding(.vertical, 6)
+                    .padding(.horizontal, 10)
                     .background(ComicTheme.Semantic.cardSurface(colorScheme))
                     .cornerRadius(ComicTheme.Dimensions.badgeCornerRadius)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: ComicTheme.Dimensions.badgeCornerRadius)
+                            .stroke(ComicTheme.Semantic.panelBorder(colorScheme).opacity(0.2), lineWidth: 1.5)
+                    )
                 }
             }
         }
@@ -150,6 +164,7 @@ struct ScheduleEditorView: View {
     let category: NotificationCategory
     @StateObject private var notificationManager = NotificationManager.shared
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
 
     @State private var frequency: NotificationFrequency = .daily
     @State private var time: Date = Date()
@@ -162,66 +177,76 @@ struct ScheduleEditorView: View {
 
     var body: some View {
         NavigationView {
-            Form {
-                Section {
-                    Picker(L("Frequency"), selection: $frequency) {
-                        ForEach(NotificationFrequency.allCases) { freq in
-                            Text(freq.displayName).tag(freq)
-                        }
-                    }
-                } header: {
-                    Text(L("When to Notify"))
-                }
-
-                Section {
-                    DatePicker(L("Time"), selection: $time, displayedComponents: .hourAndMinute)
-                } header: {
-                    Text(L("Time of Day"))
-                }
-
-                if frequency == .weekly {
-                    Section {
-                        Picker(L("Day"), selection: $weeklyDay) {
-                            ForEach(1...7, id: \.self) { day in
-                                Text(dayNames[day - 1]).tag(day)
+            ScrollView {
+                VStack(spacing: ComicTheme.Dimensions.gutterWidth) {
+                    // Frequency
+                    ComicPanelCard(titleBanner: L("When to Notify"), bannerColor: ComicTheme.Colors.boldBlue) {
+                        Picker(L("Frequency"), selection: $frequency) {
+                            ForEach(NotificationFrequency.allCases) { freq in
+                                Text(freq.displayName).tag(freq)
                             }
                         }
                         .pickerStyle(.segmented)
-                    } header: {
-                        Text(L("Day of Week"))
                     }
-                }
 
-                if frequency == .custom {
-                    Section {
-                        LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 8) {
-                            ForEach(1...7, id: \.self) { day in
-                                DayToggleButton(
-                                    day: day,
-                                    dayName: dayNames[day - 1],
-                                    isSelected: selectedDays.contains(day)
-                                ) {
-                                    if selectedDays.contains(day) {
-                                        selectedDays.remove(day)
-                                    } else {
-                                        selectedDays.insert(day)
+                    // Time
+                    ComicPanelCard(titleBanner: L("Time of Day"), bannerColor: ComicTheme.Colors.goldenYellow) {
+                        DatePicker(L("Time"), selection: $time, displayedComponents: .hourAndMinute)
+                            .font(ComicTheme.Typography.comicButton(14))
+                    }
+
+                    // Weekly day picker
+                    if frequency == .weekly {
+                        ComicPanelCard(titleBanner: L("Day of Week"), bannerColor: ComicTheme.Colors.deepPurple) {
+                            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 8) {
+                                ForEach(1...7, id: \.self) { day in
+                                    DayToggleButton(
+                                        day: day,
+                                        dayName: dayNames[day - 1],
+                                        isSelected: weeklyDay == day
+                                    ) {
+                                        weeklyDay = day
                                     }
                                 }
                             }
                         }
-                    } header: {
-                        Text(L("Select Days"))
+                    }
+
+                    // Custom days picker
+                    if frequency == .custom {
+                        ComicPanelCard(titleBanner: L("Select Days"), bannerColor: ComicTheme.Colors.deepPurple) {
+                            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 8) {
+                                ForEach(1...7, id: \.self) { day in
+                                    DayToggleButton(
+                                        day: day,
+                                        dayName: dayNames[day - 1],
+                                        isSelected: selectedDays.contains(day)
+                                    ) {
+                                        if selectedDays.contains(day) {
+                                            selectedDays.remove(day)
+                                        } else {
+                                            selectedDays.insert(day)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Preview
+                    ComicPanelCard(titleBanner: L("Preview"), bannerColor: ComicTheme.Colors.emeraldGreen) {
+                        HStack(spacing: 10) {
+                            Image(systemName: "bell.fill")
+                                .foregroundColor(ComicTheme.Colors.emeraldGreen)
+                            Text(previewDescription)
+                                .font(ComicTheme.Typography.speechBubble(13))
+                                .foregroundColor(.secondary)
+                        }
                     }
                 }
-
-                Section {
-                    Text(previewDescription)
-                        .font(.callout)
-                        .foregroundColor(.secondary)
-                } header: {
-                    Text(L("Preview"))
-                }
+                .padding()
             }
+            .halftoneBackground()
             .navigationTitle(category.displayName)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

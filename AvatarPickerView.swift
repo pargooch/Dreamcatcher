@@ -4,6 +4,7 @@ import PhotosUI
 /// Avatar selection flow: Memoji sticker, Photo Library, Camera, or Remove
 struct AvatarPickerView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @StateObject private var authManager = AuthManager.shared
 
     @State private var showMemojiBridge = false
@@ -16,96 +17,126 @@ struct AvatarPickerView: View {
 
     var body: some View {
         NavigationView {
-            VStack(spacing: 24) {
-                // Current avatar preview
-                ProfilePictureView(size: 120)
-                    .padding(.top, 20)
-
-                if let preview = previewImage {
-                    // Preview selected image
-                    VStack(spacing: 16) {
-                        Image(uiImage: preview)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: 120, height: 120)
-                            .clipShape(Circle())
-                            .overlay(Circle().stroke(ComicTheme.Colors.boldBlue, lineWidth: 3))
-
-                        if isUploading {
-                            ProgressView(L("Uploading..."))
-                                .tint(ComicTheme.Colors.boldBlue)
-                        } else {
-                            Button {
-                                useSelectedImage()
-                            } label: {
-                                Label(L("Use This Photo"), systemImage: "checkmark.circle.fill")
-                                    .frame(maxWidth: .infinity)
-                            }
-                            .buttonStyle(.borderedProminent)
-                            .tint(ComicTheme.Colors.boldBlue)
+            ScrollView {
+                VStack(spacing: ComicTheme.Dimensions.gutterWidth) {
+                    // Current avatar
+                    ComicPanelCard(titleBanner: L("Current Avatar"), bannerColor: ComicTheme.Colors.deepPurple) {
+                        HStack {
+                            Spacer()
+                            ProfilePictureView(size: 120)
+                            Spacer()
                         }
                     }
-                } else {
-                    // Action buttons
-                    VStack(spacing: 12) {
-                        Button {
-                            showMemojiBridge = true
-                        } label: {
-                            Label(L("Use Memoji"), systemImage: "face.smiling")
-                                .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .tint(ComicTheme.Colors.boldBlue)
 
-                        PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
-                            Label(L("Choose Photo"), systemImage: "photo.on.rectangle")
-                                .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(.bordered)
-                        .tint(ComicTheme.Colors.boldBlue)
+                    if let preview = previewImage {
+                        // Preview selected image
+                        ComicPanelCard(titleBanner: L("New Photo"), bannerColor: ComicTheme.Colors.emeraldGreen) {
+                            VStack(spacing: 16) {
+                                HStack {
+                                    Spacer()
+                                    Image(uiImage: preview)
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: 120, height: 120)
+                                        .clipShape(Circle())
+                                        .overlay(
+                                            Circle()
+                                                .stroke(
+                                                    ComicTheme.panelBorderColor(colorScheme),
+                                                    lineWidth: ComicTheme.Dimensions.panelBorderWidth
+                                                )
+                                        )
+                                    Spacer()
+                                }
 
-                        Button {
-                            showCamera = true
-                        } label: {
-                            Label(L("Take Photo"), systemImage: "camera")
-                                .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(.bordered)
-                        .tint(ComicTheme.Colors.boldBlue)
+                                if isUploading {
+                                    ProgressView(L("Uploading..."))
+                                        .tint(ComicTheme.Colors.boldBlue)
+                                } else {
+                                    Button {
+                                        useSelectedImage()
+                                    } label: {
+                                        Label(L("Use This Photo"), systemImage: "checkmark.circle.fill")
+                                    }
+                                    .buttonStyle(.comicPrimary(color: ComicTheme.Colors.emeraldGreen))
 
-                        if authManager.avatarImageData != nil {
-                            Button(role: .destructive) {
-                                removeAvatar()
-                            } label: {
-                                Label(L("Remove Avatar"), systemImage: "trash")
-                                    .frame(maxWidth: .infinity)
+                                    Button {
+                                        previewImage = nil
+                                        selectedPhotoItem = nil
+                                    } label: {
+                                        Label(L("Cancel"), systemImage: "xmark.circle")
+                                    }
+                                    .buttonStyle(.comicSecondary(color: ComicTheme.Colors.crimsonRed))
+                                }
                             }
-                            .buttonStyle(.bordered)
+                        }
+                    } else {
+                        // Action buttons
+                        ComicPanelCard(titleBanner: L("Choose Avatar"), bannerColor: ComicTheme.Colors.boldBlue) {
+                            VStack(spacing: 12) {
+                                Button {
+                                    showMemojiBridge = true
+                                } label: {
+                                    Label(L("Use Memoji"), systemImage: "face.smiling")
+                                }
+                                .buttonStyle(.comicPrimary(color: ComicTheme.Colors.boldBlue))
+
+                                PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                                    Label(L("Choose Photo"), systemImage: "photo.on.rectangle")
+                                        .frame(maxWidth: .infinity)
+                                        .font(ComicTheme.Typography.comicButton(16))
+                                        .padding(.vertical, 12)
+                                        .background(ComicTheme.Semantic.cardSurface(colorScheme))
+                                        .foregroundColor(ComicTheme.Colors.boldBlue)
+                                        .clipShape(RoundedRectangle(cornerRadius: ComicTheme.Dimensions.buttonCornerRadius))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: ComicTheme.Dimensions.buttonCornerRadius)
+                                                .stroke(ComicTheme.Colors.boldBlue, lineWidth: 2.5)
+                                        )
+                                }
+
+                                Button {
+                                    showCamera = true
+                                } label: {
+                                    Label(L("Take Photo"), systemImage: "camera")
+                                }
+                                .buttonStyle(.comicSecondary(color: ComicTheme.Colors.boldBlue))
+
+                                if authManager.avatarImageData != nil {
+                                    Button(role: .destructive) {
+                                        removeAvatar()
+                                    } label: {
+                                        Label(L("Remove Avatar"), systemImage: "trash")
+                                    }
+                                    .buttonStyle(.comicDestructive)
+                                }
+                            }
                         }
                     }
-                }
 
-                // Privacy notice
-                HStack(alignment: .top, spacing: 8) {
-                    Image(systemName: "lock.shield")
-                        .foregroundColor(.secondary)
-                    Text(L("Your photo creates a text description of your appearance. The photo itself is not shared with AI services."))
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    // Privacy notice
+                    ComicPanelCard(titleBanner: L("Privacy"), bannerColor: ComicTheme.Colors.goldenYellow) {
+                        HStack(alignment: .top, spacing: 10) {
+                            Image(systemName: "lock.shield")
+                                .font(.body.weight(.bold))
+                                .foregroundColor(ComicTheme.Colors.goldenYellow)
+                                .frame(width: 24)
+                            Text(L("Your photo creates a text description of your appearance. The photo itself is not shared with AI services."))
+                                .font(ComicTheme.Typography.speechBubble(12))
+                                .foregroundColor(.secondary)
+                        }
+                    }
+
+                    if let error = errorMessage {
+                        Text(error)
+                            .font(ComicTheme.Typography.speechBubble(12))
+                            .foregroundColor(ComicTheme.Colors.crimsonRed)
+                            .padding(.horizontal)
+                    }
                 }
                 .padding()
-                .background(.regularMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-
-                if let error = errorMessage {
-                    Text(error)
-                        .font(.caption)
-                        .foregroundColor(ComicTheme.Colors.crimsonRed)
-                }
-
-                Spacer()
             }
-            .padding()
+            .halftoneBackground()
             .navigationTitle(L("Profile Picture"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -116,9 +147,20 @@ struct AvatarPickerView: View {
                 }
             }
             .sheet(isPresented: $showMemojiBridge) {
-                MemojiBridgeView { image in
-                    previewImage = image
-                    showMemojiBridge = false
+                NavigationView {
+                    MemojiTextViewWrapper(onSave: { image in
+                        previewImage = image
+                        showMemojiBridge = false
+                    })
+                    .navigationTitle(L("Memoji"))
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button(L("Cancel")) {
+                                showMemojiBridge = false
+                            }
+                        }
+                    }
                 }
             }
             .sheet(isPresented: $showCamera) {
@@ -208,85 +250,194 @@ struct AvatarPickerView: View {
     }
 }
 
-// MARK: - Memoji Bridge View
+// MARK: - Memoji UITextView (renders sticker images inline)
 
-struct MemojiBridgeView: View {
-    let onImageCaptured: (UIImage) -> Void
-    @Environment(\.dismiss) private var dismiss
+struct MemojiTextViewWrapper: UIViewControllerRepresentable {
+    let onSave: (UIImage) -> Void
 
-    var body: some View {
-        NavigationView {
-            VStack(spacing: 24) {
-                Spacer()
+    func makeUIViewController(context: Context) -> MemojiTextViewController {
+        let vc = MemojiTextViewController()
+        vc.onSave = onSave
+        return vc
+    }
 
-                Image(systemName: "face.smiling")
-                    .font(.system(size: 60))
-                    .foregroundColor(ComicTheme.Colors.boldBlue)
+    func updateUIViewController(_ uiViewController: MemojiTextViewController, context: Context) {
+        uiViewController.onSave = onSave
+    }
+}
 
-                Text(L("Paste Your Memoji"))
-                    .font(ComicTheme.Typography.dreamTitle(24))
+class MemojiTextViewController: UIViewController {
+    var onSave: ((UIImage) -> Void)?
+    private let textView = UITextView()
+    private let instructionLabel = UILabel()
+    private let previewImageView = UIImageView()
+    private let useButton = UIButton(type: .system)
+    private let pasteButton = UIButton(type: .system)
+    private var pasteboardObserver: Any?
+    private var clipboardTimer: Timer?
+    private var lastPasteboardChangeCount = UIPasteboard.general.changeCount
+    private var capturedImage: UIImage?
 
-                Text(L("1. Tap the text field below\n2. Switch to the Memoji keyboard\n3. Tap your favorite Memoji sticker"))
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
+    init() {
+        super.init(nibName: nil, bundle: nil)
+    }
 
-                PasteableTextFieldWrapper { image in
-                    onImageCaptured(image)
-                }
-                .frame(height: 60)
-                .padding(.horizontal, 40)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
 
-                Spacer()
-            }
-            .navigationTitle(L("Memoji"))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(L("Cancel")) {
-                        dismiss()
-                    }
-                }
-            }
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        view.backgroundColor = .systemBackground
+
+        // Instruction label
+        instructionLabel.numberOfLines = 0
+        instructionLabel.textAlignment = .center
+        instructionLabel.translatesAutoresizingMaskIntoConstraints = false
+        let steps = [
+            L("Tap the area below to open the keyboard"),
+            L("Tap") + " 🌐 " + L("to switch to emoji keyboard"),
+            L("Swipe to find Memoji stickers and tap one"),
+        ]
+        let text = steps.enumerated().map { "\($0.offset + 1). \($0.element)" }.joined(separator: "\n")
+        instructionLabel.text = text
+        instructionLabel.font = .preferredFont(forTextStyle: .subheadline)
+        instructionLabel.textColor = .secondaryLabel
+        view.addSubview(instructionLabel)
+
+        // Text view (receives sticker paste from keyboard)
+        textView.font = .systemFont(ofSize: 48)
+        textView.textAlignment = .center
+        textView.backgroundColor = .secondarySystemBackground
+        textView.layer.cornerRadius = 12
+        textView.clipsToBounds = true
+        textView.allowsEditingTextAttributes = true
+        textView.translatesAutoresizingMaskIntoConstraints = false
+        textView.delegate = self
+        view.addSubview(textView)
+
+        // Preview image (shown when a Memoji is captured)
+        previewImageView.contentMode = .scaleAspectFit
+        previewImageView.layer.cornerRadius = 60
+        previewImageView.clipsToBounds = true
+        previewImageView.layer.borderWidth = 3
+        previewImageView.layer.borderColor = UIColor.systemBlue.cgColor
+        previewImageView.translatesAutoresizingMaskIntoConstraints = false
+        previewImageView.isHidden = true
+        view.addSubview(previewImageView)
+
+        // "Use This Memoji" button (shown after capture)
+        var useConfig = UIButton.Configuration.filled()
+        useConfig.title = L("Use This Memoji")
+        useConfig.image = UIImage(systemName: "checkmark.circle.fill")
+        useConfig.imagePadding = 8
+        useConfig.baseBackgroundColor = .systemGreen
+        useButton.configuration = useConfig
+        useButton.addTarget(self, action: #selector(useTapped), for: .touchUpInside)
+        useButton.translatesAutoresizingMaskIntoConstraints = false
+        useButton.isHidden = true
+        view.addSubview(useButton)
+
+        // "Paste from Clipboard" fallback
+        var pasteConfig = UIButton.Configuration.tinted()
+        pasteConfig.title = L("Or paste copied Memoji from clipboard")
+        pasteConfig.image = UIImage(systemName: "doc.on.clipboard")
+        pasteConfig.imagePadding = 8
+        pasteConfig.baseForegroundColor = .secondaryLabel
+        pasteButton.configuration = pasteConfig
+        pasteButton.addTarget(self, action: #selector(pasteTapped), for: .touchUpInside)
+        pasteButton.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(pasteButton)
+
+        NSLayoutConstraint.activate([
+            instructionLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
+            instructionLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            instructionLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+
+            textView.topAnchor.constraint(equalTo: instructionLabel.bottomAnchor, constant: 16),
+            textView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            textView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+            textView.heightAnchor.constraint(equalToConstant: 120),
+
+            previewImageView.topAnchor.constraint(equalTo: textView.bottomAnchor, constant: 16),
+            previewImageView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            previewImageView.widthAnchor.constraint(equalToConstant: 120),
+            previewImageView.heightAnchor.constraint(equalToConstant: 120),
+
+            useButton.topAnchor.constraint(equalTo: previewImageView.bottomAnchor, constant: 16),
+            useButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            useButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+            useButton.heightAnchor.constraint(equalToConstant: 50),
+
+            pasteButton.topAnchor.constraint(equalTo: useButton.bottomAnchor, constant: 12),
+            pasteButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+        ])
+
+        // Poll clipboard every 0.5s (UIPasteboard.changedNotification is unreliable for stickers)
+        lastPasteboardChangeCount = UIPasteboard.general.changeCount
+        clipboardTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+            self?.checkClipboardForNewImage()
         }
     }
-}
 
-// MARK: - Pasteable Text Field (captures Memoji sticker images)
-
-struct PasteableTextFieldWrapper: UIViewRepresentable {
-    let onImagePasted: (UIImage) -> Void
-
-    func makeUIView(context: Context) -> PasteableTextField {
-        let textField = PasteableTextField()
-        textField.onImagePasted = onImagePasted
-        textField.placeholder = L("Tap here, then paste Memoji...")
-        textField.textAlignment = .center
-        textField.borderStyle = .roundedRect
-        textField.font = .systemFont(ofSize: 16)
-        return textField
+    deinit {
+        clipboardTimer?.invalidate()
+        if let observer = pasteboardObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
     }
 
-    func updateUIView(_ uiView: PasteableTextField, context: Context) {}
-}
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        textView.becomeFirstResponder()
+    }
 
-class PasteableTextField: UITextField {
-    var onImagePasted: ((UIImage) -> Void)?
+    private func checkClipboardForNewImage() {
+        let currentCount = UIPasteboard.general.changeCount
+        guard currentCount != lastPasteboardChangeCount else { return }
+        lastPasteboardChangeCount = currentCount
 
-    override func paste(_ sender: Any?) {
         if let image = UIPasteboard.general.image {
-            onImagePasted?(image)
-            return
+            showCapturedImage(image)
         }
-        super.paste(sender)
     }
 
-    override func canPerformAction(_ action: Selector, withSender sender: Any?) -> Bool {
-        if action == #selector(paste(_:)) {
-            return true
+    private func showCapturedImage(_ image: UIImage) {
+        capturedImage = image
+        previewImageView.image = image
+        previewImageView.isHidden = false
+        useButton.isHidden = false
+
+        // Dismiss keyboard to make space for preview + button
+        textView.resignFirstResponder()
+    }
+
+    @objc private func useTapped() {
+        guard let image = capturedImage else { return }
+        let callback = onSave
+        DispatchQueue.main.async {
+            callback?(image)
         }
-        return super.canPerformAction(action, withSender: sender)
+    }
+
+    @objc private func pasteTapped() {
+        if let image = UIPasteboard.general.image {
+            showCapturedImage(image)
+        }
+    }
+}
+
+extension MemojiTextViewController: UITextViewDelegate {
+    func textViewDidChange(_ textView: UITextView) {
+        // Check if sticker was inserted as NSTextAttachment
+        let attrText = textView.attributedText ?? NSAttributedString()
+        attrText.enumerateAttribute(.attachment, in: NSRange(location: 0, length: attrText.length)) { value, _, stop in
+            if let attachment = value as? NSTextAttachment,
+               let image = attachment.image ?? attachment.image(forBounds: attachment.bounds, textContainer: nil, characterIndex: 0) {
+                self.showCapturedImage(image)
+                stop.pointee = true
+            }
+        }
     }
 }
 
