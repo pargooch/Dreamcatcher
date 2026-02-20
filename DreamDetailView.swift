@@ -248,7 +248,7 @@ struct DreamDetailView: View {
             }
             .padding()
         }
-        .halftoneBackground()
+        .halftoneBackground(ComicTheme.Palette.bgDreams)
         .navigationTitle(L("Dream"))
         .navigationBarTitleDisplayMode(.inline)
         .confirmationDialog(L("Delete this dream?"), isPresented: $showDeleteConfirmation, titleVisibility: .visible) {
@@ -414,7 +414,7 @@ struct RewrittenDreamDetailView: View {
             }
             .padding()
         }
-        .halftoneBackground()
+        .halftoneBackground(ComicTheme.Palette.bgDreams)
         .navigationTitle(L("Rewritten Dream"))
         .navigationBarTitleDisplayMode(.inline)
         .onDisappear {

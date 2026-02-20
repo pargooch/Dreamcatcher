@@ -132,7 +132,7 @@ struct AvatarPickerView: View {
                 }
                 .padding()
             }
-            .halftoneBackground()
+            .halftoneBackground(ComicTheme.Palette.bgAccount)
             .navigationTitle(L("Profile Picture"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

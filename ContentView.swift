@@ -63,7 +63,7 @@ struct DreamsListView: View {
                 .padding()
                 .padding(.bottom, isSelectMode ? 70 : 0)
             }
-            .halftoneBackground()
+            .halftoneBackground(ComicTheme.Palette.bgDreams)
             .navigationTitle(L("Dreams"))
             .searchable(text: $searchText, prompt: Text(L("Search dreams...")))
             .toolbar {

@@ -65,7 +65,7 @@ struct NotificationSettingsView: View {
             }
             .padding()
         }
-        .halftoneBackground()
+        .halftoneBackground(ComicTheme.Palette.bgNotifications)
         .navigationTitle(L("Notifications"))
         .navigationBarTitleDisplayMode(.inline)
         .alert(L("Permission Required"), isPresented: $showingPermissionAlert) {
@@ -253,7 +253,7 @@ struct ScheduleEditorView: View {
                 }
                 .padding()
             }
-            .halftoneBackground()
+            .halftoneBackground(ComicTheme.Palette.bgNotifications)
             .navigationTitle(category.displayName)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

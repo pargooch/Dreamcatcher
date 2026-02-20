@@ -72,11 +72,14 @@ struct HalftoneBackground: View {
 // MARK: - Composite Background
 
 struct ComicBackground: View {
+    var baseColor: Color?
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         ZStack {
-            ComicTheme.Semantic.background(colorScheme)
+            (colorScheme == .dark
+                ? ComicTheme.Semantic.background(colorScheme)
+                : (baseColor ?? ComicTheme.Semantic.background(colorScheme)))
                 .ignoresSafeArea()
 
             ArtDecoBackground(lineSpacing: 24, opacity: 0.035)
@@ -89,5 +92,9 @@ struct ComicBackground: View {
 extension View {
     func halftoneBackground() -> some View {
         self.background(ComicBackground())
+    }
+
+    func halftoneBackground(_ color: Color) -> some View {
+        self.background(ComicBackground(baseColor: color))
     }
 }

@@ -121,7 +121,7 @@ struct NewDreamView: View {
                 }
             }
             .scrollDismissesKeyboard(.interactively)
-            .halftoneBackground()
+            .halftoneBackground(ComicTheme.Palette.bgNewDream)
             .navigationTitle(L("New Dream"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

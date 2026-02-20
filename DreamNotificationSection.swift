@@ -307,7 +307,7 @@ struct AddDreamReminderSheet: View {
                 }
                 .padding()
             }
-            .halftoneBackground()
+            .halftoneBackground(ComicTheme.Palette.bgDreams)
             .navigationTitle(L("Add Reminder"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

@@ -26,6 +26,14 @@ enum ComicTheme {
         static let agedPaperDark   = Color(red: 0x2A/255, green: 0x24/255, blue: 0x1E/255)
         static let panelSurface    = Color(red: 0xFB/255, green: 0xF2/255, blue: 0xDB/255)
         static let panelSurfaceDark = Color(red: 0x33/255, green: 0x2C/255, blue: 0x24/255)
+
+        // Per-page background tints (light mode only)
+        static let bgNewDream      = Color(red: 0xF4/255, green: 0xBE/255, blue: 0xAE/255)
+        static let bgDreams        = Color(red: 0xEF/255, green: 0xCE/255, blue: 0x7B/255)
+        static let bgAnalysis      = Color(red: 0x93/255, green: 0xD3/255, blue: 0xAE/255)
+        static let bgSettings      = Color(red: 0xFA/255, green: 0xEC/255, blue: 0xD0/255)
+        static let bgNotifications = Color(red: 0xE8/255, green: 0xCC/255, blue: 0xAD/255)
+        static let bgAccount       = Color(red: 0xF1/255, green: 0xF3/255, blue: 0xD0/255)
     }
 
     // MARK: - Semantic Colors (what each color means)

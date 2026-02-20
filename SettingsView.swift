@@ -7,11 +7,11 @@ struct SettingsView: View {
         ScrollView {
             VStack(spacing: ComicTheme.Dimensions.gutterWidth) {
                 // Account section
-                ComicPanelCard(titleBanner: L("Account"), bannerColor: ComicTheme.Colors.deepPurple) {
-                    if authManager.isAuthenticated {
-                        NavigationLink {
-                            AccountView()
-                        } label: {
+                if authManager.isAuthenticated {
+                    NavigationLink {
+                        AccountView()
+                    } label: {
+                        ComicPanelCard(titleBanner: L("Account"), bannerColor: ComicTheme.Colors.deepPurple) {
                             HStack(spacing: 12) {
                                 Image(systemName: "person.crop.circle.fill")
                                     .font(.title2.weight(.bold))
@@ -30,11 +30,13 @@ struct SettingsView: View {
                                     .foregroundColor(.secondary)
                             }
                         }
-                        .buttonStyle(.plain)
-                    } else {
-                        NavigationLink {
-                            AuthView()
-                        } label: {
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    NavigationLink {
+                        AuthView()
+                    } label: {
+                        ComicPanelCard(titleBanner: L("Account"), bannerColor: ComicTheme.Colors.deepPurple) {
                             HStack(spacing: 12) {
                                 Image(systemName: "person.crop.circle.badge.plus")
                                     .font(.title2.weight(.bold))
@@ -53,15 +55,15 @@ struct SettingsView: View {
                                     .foregroundColor(.secondary)
                             }
                         }
-                        .buttonStyle(.plain)
                     }
+                    .buttonStyle(.plain)
                 }
 
                 // Notifications section
-                ComicPanelCard(titleBanner: L("Notifications"), bannerColor: ComicTheme.Colors.emeraldGreen) {
-                    NavigationLink {
-                        NotificationSettingsView()
-                    } label: {
+                NavigationLink {
+                    NotificationSettingsView()
+                } label: {
+                    ComicPanelCard(titleBanner: L("Notifications"), bannerColor: ComicTheme.Colors.emeraldGreen) {
                         HStack(spacing: 12) {
                             Image(systemName: "bell.badge.fill")
                                 .font(.title3.weight(.bold))
@@ -75,15 +77,15 @@ struct SettingsView: View {
                                 .foregroundColor(.secondary)
                         }
                     }
-                    .buttonStyle(.plain)
                 }
+                .buttonStyle(.plain)
 
                 // Language section
                 LanguagePickerSection()
             }
             .padding()
         }
-        .halftoneBackground()
+        .halftoneBackground(ComicTheme.Palette.bgSettings)
         .navigationTitle(L("Settings"))
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -195,7 +197,7 @@ struct AccountView: View {
             }
             .padding()
         }
-        .halftoneBackground()
+        .halftoneBackground(ComicTheme.Palette.bgAccount)
         .navigationTitle("Account")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
@@ -221,81 +223,93 @@ struct AccountView: View {
 
 struct LanguagePickerSection: View {
     @State private var localization = LocalizationManager.shared
-    @State private var isExpanded = false
-    @Environment(\.colorScheme) private var colorScheme
+    @State private var showLanguageSheet = false
 
     private var currentLanguage: LocalizationManager.Language? {
         LocalizationManager.supportedLanguages.first { $0.code == localization.currentLanguage }
     }
 
     var body: some View {
-        ComicPanelCard(titleBanner: L("Language"), bannerColor: ComicTheme.Colors.boldBlue) {
-            VStack(spacing: 0) {
-                // Current selection — always visible, acts as toggle
-                Button {
-                    withAnimation(.easeInOut(duration: 0.25)) {
-                        isExpanded.toggle()
-                    }
-                } label: {
-                    HStack(spacing: 12) {
-                        Image(systemName: "globe")
-                            .font(.title3.weight(.bold))
-                            .foregroundColor(ComicTheme.Colors.boldBlue)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(currentLanguage?.nativeName ?? "English")
-                                .font(ComicTheme.Typography.comicButton(14))
-                                .foregroundColor(.primary)
-                            Text(currentLanguage?.name ?? "English")
-                                .font(ComicTheme.Typography.speechBubble(12))
-                                .foregroundColor(.secondary)
-                        }
-                        Spacer()
-                        Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                            .font(.caption.weight(.bold))
+        Button {
+            showLanguageSheet = true
+        } label: {
+            ComicPanelCard(titleBanner: L("Language"), bannerColor: ComicTheme.Colors.boldBlue) {
+                HStack(spacing: 12) {
+                    Image(systemName: "globe")
+                        .font(.title3.weight(.bold))
+                        .foregroundColor(ComicTheme.Colors.boldBlue)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(currentLanguage?.nativeName ?? "English")
+                            .font(ComicTheme.Typography.comicButton(14))
+                            .foregroundColor(.primary)
+                        Text(currentLanguage?.name ?? "English")
+                            .font(ComicTheme.Typography.speechBubble(12))
                             .foregroundColor(.secondary)
                     }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.bold))
+                        .foregroundColor(.secondary)
                 }
-                .buttonStyle(.plain)
+            }
+        }
+        .buttonStyle(.plain)
+        .sheet(isPresented: $showLanguageSheet) {
+            LanguageSelectionView()
+        }
+    }
+}
 
-                // Expandable language list
-                if isExpanded {
-                    Divider()
-                        .padding(.vertical, 10)
+// MARK: - Language Selection View
 
-                    VStack(spacing: 4) {
-                        ForEach(LocalizationManager.supportedLanguages) { lang in
-                            Button {
-                                localization.currentLanguage = lang.code
-                                withAnimation(.easeInOut(duration: 0.25)) {
-                                    isExpanded = false
-                                }
-                            } label: {
-                                HStack(spacing: 12) {
-                                    Text(lang.nativeName)
-                                        .font(ComicTheme.Typography.comicButton(14))
-                                        .foregroundColor(.primary)
-                                    Text(lang.name)
-                                        .font(ComicTheme.Typography.speechBubble(12))
-                                        .foregroundColor(.secondary)
-                                    Spacer()
-                                    if localization.currentLanguage == lang.code {
-                                        Image(systemName: "checkmark.circle.fill")
-                                            .foregroundColor(ComicTheme.Colors.boldBlue)
-                                    }
-                                }
-                                .padding(.vertical, 6)
-                                .padding(.horizontal, 12)
-                                .background(
-                                    localization.currentLanguage == lang.code
-                                        ? ComicTheme.Colors.boldBlue.opacity(0.1)
-                                        : Color.clear
-                                )
-                                .clipShape(RoundedRectangle(cornerRadius: ComicTheme.Dimensions.buttonCornerRadius))
+struct LanguageSelectionView: View {
+    @State private var localization = LocalizationManager.shared
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationView {
+            List {
+                ForEach(LocalizationManager.supportedLanguages) { lang in
+                    Button {
+                        localization.currentLanguage = lang.code
+                        dismiss()
+                    } label: {
+                        HStack(spacing: 14) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(lang.nativeName)
+                                    .font(ComicTheme.Typography.comicButton(15))
+                                    .foregroundColor(.primary)
+                                Text(lang.name)
+                                    .font(ComicTheme.Typography.speechBubble(13))
+                                    .foregroundColor(.secondary)
                             }
-                            .buttonStyle(.plain)
+                            Spacer()
+                            if localization.currentLanguage == lang.code {
+                                Image(systemName: "checkmark")
+                                    .font(.body.weight(.semibold))
+                                    .foregroundColor(ComicTheme.Colors.boldBlue)
+                            }
                         }
+                        .contentShape(Rectangle())
                     }
-                    .transition(.opacity.combined(with: .move(edge: .top)))
+                    .buttonStyle(.plain)
+                    .listRowBackground(
+                        localization.currentLanguage == lang.code
+                            ? ComicTheme.Colors.boldBlue.opacity(0.08)
+                            : Color.clear
+                    )
+                }
+            }
+            .scrollContentBackground(.hidden)
+            .halftoneBackground(ComicTheme.Palette.bgSettings)
+            .navigationTitle(L("Language"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(L("Done")) {
+                        dismiss()
+                    }
+                    .fontWeight(.bold)
                 }
             }
         }

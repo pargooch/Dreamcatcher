@@ -82,7 +82,7 @@ struct DreamAnalysisView: View {
             }
             .padding()
         }
-        .halftoneBackground()
+        .halftoneBackground(ComicTheme.Palette.bgAnalysis)
         .navigationTitle(L("Dream Analysis"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

@@ -394,7 +394,7 @@ struct DreamImageGalleryView: View {
                 }
                 .background(ComicTheme.Semantic.cardSurface(.light))
             }
-            .halftoneBackground()
+            .halftoneBackground(ComicTheme.Palette.bgDreams)
             .navigationTitle(L("Dream Sequence"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

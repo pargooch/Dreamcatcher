@@ -61,7 +61,7 @@ struct CalendarDreamsView: View {
             }
             .padding()
         }
-        .halftoneBackground()
+        .halftoneBackground(ComicTheme.Palette.bgDreams)
         .navigationTitle(L("Calendar"))
         .navigationBarTitleDisplayMode(.inline)
     }
