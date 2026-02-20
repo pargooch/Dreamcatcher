@@ -9,6 +9,9 @@ struct ContentView: View {
     @State private var searchText = ""
     @State private var resendMessage: String?
     @State private var isResending = false
+    @State private var isSelectMode = false
+    @State private var selectedDreamIDs: Set<UUID> = []
+    @State private var showDeleteConfirmation = false
 
     private var filteredDreams: [Dream] {
         guard !searchText.isEmpty else { return store.dreams }
@@ -22,88 +25,199 @@ struct ContentView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                if authManager.isAuthenticated && !authManager.emailVerified {
-                    emailVerificationBanner
+            ZStack(alignment: .bottom) {
+                ScrollView {
+                    if authManager.isAuthenticated && !authManager.emailVerified {
+                        emailVerificationBanner
+                    }
+                    LazyVStack(spacing: ComicTheme.Dimensions.gutterWidth) {
+                        if store.dreams.isEmpty {
+                            emptyState
+                        } else if filteredDreams.isEmpty {
+                            Text(L("No dreams match your search"))
+                                .font(ComicTheme.Typography.speechBubble(13))
+                                .foregroundColor(.secondary)
+                                .padding(.top, 40)
+                        } else {
+                            ForEach(filteredDreams) { dream in
+                                if isSelectMode {
+                                    Button {
+                                        toggleSelection(dream.id)
+                                    } label: {
+                                        HStack(spacing: 12) {
+                                            Image(systemName: selectedDreamIDs.contains(dream.id) ? "checkmark.circle.fill" : "circle")
+                                                .font(.system(size: 22, weight: .medium))
+                                                .foregroundColor(selectedDreamIDs.contains(dream.id) ? ComicTheme.Colors.boldBlue : .secondary)
+                                            DreamRowView(dream: dream)
+                                        }
+                                    }
+                                    .buttonStyle(.plain)
+                                } else {
+                                    NavigationLink {
+                                        DreamDetailView(dream: dream)
+                                    } label: {
+                                        DreamRowView(dream: dream)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                        }
+                    }
+                    .padding()
+                    // Extra bottom padding when delete bar is visible
+                    .padding(.bottom, isSelectMode ? 70 : 0)
                 }
-                LazyVStack(spacing: ComicTheme.Dimensions.gutterWidth) {
-                    if store.dreams.isEmpty {
-                        emptyState
-                    } else if filteredDreams.isEmpty {
-                        Text(L("No dreams match your search"))
-                            .font(ComicTheme.Typography.speechBubble(13))
-                            .foregroundColor(.secondary)
-                            .padding(.top, 40)
-                    } else {
-                        ForEach(filteredDreams) { dream in
-                            SwipeToDeleteWrapper {
-                                NavigationLink {
-                                    DreamDetailView(dream: dream)
+                .halftoneBackground()
+                .navigationTitle(L("Dreams"))
+                .searchable(text: $searchText, prompt: Text(L("Search dreams...")))
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        if isSelectMode {
+                            Button(L("Cancel")) {
+                                exitSelectMode()
+                            }
+                        } else {
+                            HStack(spacing: 12) {
+                                Button {
+                                    showSettings = true
                                 } label: {
-                                    DreamRowView(dream: dream)
+                                    Image(systemName: "gearshape.fill")
+                                        .font(.system(size: 18, weight: .bold))
+                                        .foregroundStyle(ComicTheme.Colors.deepPurple)
                                 }
-                                .buttonStyle(.plain)
-                            } onDelete: {
-                                NotificationManager.shared.cancelDreamNotification(for: dream.id)
-                                withAnimation(.spring(response: 0.3)) {
-                                    store.deleteDream(dream)
-                                }
-                            }
-                        }
-                    }
-                }
-                .padding()
-            }
-            .halftoneBackground()
-            .navigationTitle(L("Dreams"))
-            .searchable(text: $searchText, prompt: Text(L("Search dreams...")))
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    HStack(spacing: 12) {
-                        Button {
-                            showSettings = true
-                        } label: {
-                            Image(systemName: "gearshape.fill")
-                                .font(.system(size: 18, weight: .bold))
-                                .foregroundStyle(ComicTheme.Colors.deepPurple)
-                        }
 
-                        if AuthManager.shared.isAuthenticated {
+                                if AuthManager.shared.isAuthenticated {
+                                    Button {
+                                        showAnalysis = true
+                                    } label: {
+                                        Image(systemName: "chart.line.uptrend.xyaxis")
+                                            .font(.system(size: 18, weight: .bold))
+                                            .foregroundStyle(ComicTheme.Colors.hotPink)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        if isSelectMode {
                             Button {
-                                showAnalysis = true
+                                if selectedDreamIDs.count == filteredDreams.count {
+                                    selectedDreamIDs.removeAll()
+                                } else {
+                                    selectedDreamIDs = Set(filteredDreams.map(\.id))
+                                }
                             } label: {
-                                Image(systemName: "chart.line.uptrend.xyaxis")
-                                    .font(.system(size: 18, weight: .bold))
-                                    .foregroundStyle(ComicTheme.Colors.hotPink)
+                                Text(selectedDreamIDs.count == filteredDreams.count ? L("Deselect All") : L("Select All"))
+                                    .font(.subheadline.weight(.semibold))
+                            }
+                        } else {
+                            HStack(spacing: 12) {
+                                if !store.dreams.isEmpty {
+                                    Button {
+                                        isSelectMode = true
+                                    } label: {
+                                        Image(systemName: "trash")
+                                            .font(.system(size: 18, weight: .bold))
+                                            .foregroundStyle(ComicTheme.Colors.crimsonRed)
+                                    }
+                                }
+                                Button {
+                                    showNewDream = true
+                                } label: {
+                                    Image(systemName: "plus.circle.fill")
+                                        .font(.system(size: 22, weight: .bold))
+                                        .foregroundStyle(ComicTheme.Colors.boldBlue)
+                                }
                             }
                         }
                     }
                 }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        showNewDream = true
-                    } label: {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.system(size: 22, weight: .bold))
-                            .foregroundStyle(ComicTheme.Colors.boldBlue)
+                .sheet(isPresented: $showNewDream) {
+                    NewDreamView()
+                }
+                .sheet(isPresented: $showSettings) {
+                    NavigationView {
+                        SettingsView()
                     }
                 }
-            }
-            .sheet(isPresented: $showNewDream) {
-                NewDreamView()
-            }
-            .sheet(isPresented: $showSettings) {
-                NavigationView {
-                    SettingsView()
+                .sheet(isPresented: $showAnalysis) {
+                    NavigationView {
+                        DreamAnalysisView()
+                    }
+                }
+
+                // Delete bar at bottom
+                if isSelectMode {
+                    deleteBar
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
-            .sheet(isPresented: $showAnalysis) {
-                NavigationView {
-                    DreamAnalysisView()
+            .animation(.easeInOut(duration: 0.25), value: isSelectMode)
+            .confirmationDialog(
+                L("Delete %lld dreams?", selectedDreamIDs.count),
+                isPresented: $showDeleteConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button(L("Delete"), role: .destructive) {
+                    deleteSelectedDreams()
                 }
+                Button(L("Cancel"), role: .cancel) {}
+            } message: {
+                Text(L("This will permanently remove the selected dreams and all their content."))
             }
         }
     }
+
+    // MARK: - Delete Bar
+
+    private var deleteBar: some View {
+        Button {
+            if !selectedDreamIDs.isEmpty {
+                showDeleteConfirmation = true
+            }
+        } label: {
+            Label(
+                selectedDreamIDs.isEmpty
+                    ? L("Select Dreams to Delete")
+                    : L("Delete %lld Dreams", selectedDreamIDs.count),
+                systemImage: "trash"
+            )
+        }
+        .buttonStyle(.comicDestructive)
+        .disabled(selectedDreamIDs.isEmpty)
+        .opacity(selectedDreamIDs.isEmpty ? 0.5 : 1)
+        .padding(.horizontal)
+        .padding(.bottom, 8)
+    }
+
+    // MARK: - Helpers
+
+    private func toggleSelection(_ id: UUID) {
+        if selectedDreamIDs.contains(id) {
+            selectedDreamIDs.remove(id)
+        } else {
+            selectedDreamIDs.insert(id)
+        }
+    }
+
+    private func deleteSelectedDreams() {
+        for id in selectedDreamIDs {
+            NotificationManager.shared.cancelDreamNotification(for: id)
+            if let dream = store.dreams.first(where: { $0.id == id }) {
+                store.deleteDream(dream)
+            }
+        }
+        exitSelectMode()
+    }
+
+    private func exitSelectMode() {
+        withAnimation(.easeInOut(duration: 0.25)) {
+            isSelectMode = false
+            selectedDreamIDs.removeAll()
+        }
+    }
+
+    // MARK: - Empty State
 
     private var emptyState: some View {
         ComicPanelCard(titleBanner: L("Welcome, Dreamer!"), bannerColor: ComicTheme.Colors.deepPurple) {
@@ -125,6 +239,8 @@ struct ContentView: View {
         }
         .padding(.top, 40)
     }
+
+    // MARK: - Email Verification Banner
 
     private var emailVerificationBanner: some View {
         HStack(spacing: 10) {
@@ -260,87 +376,6 @@ struct DreamRowView: View {
         .onAppear {
             withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                 appeared = true
-            }
-        }
-    }
-}
-
-// MARK: - Swipe to Delete
-
-struct SwipeToDeleteWrapper<Content: View>: View {
-    let content: Content
-    let onDelete: () -> Void
-
-    @State private var offset: CGFloat = 0
-    @State private var showConfirm = false
-    @Environment(\.colorScheme) private var colorScheme
-
-    private let deleteThreshold: CGFloat = -80
-    private let snapThreshold: CGFloat = -40
-
-    init(@ViewBuilder content: () -> Content, onDelete: @escaping () -> Void) {
-        self.content = content()
-        self.onDelete = onDelete
-    }
-
-    var body: some View {
-        ZStack(alignment: .trailing) {
-            // Delete background
-            HStack(spacing: 0) {
-                Spacer()
-                Button {
-                    withAnimation(.spring(response: 0.3)) {
-                        onDelete()
-                    }
-                } label: {
-                    VStack(spacing: 4) {
-                        Image(systemName: "trash.fill")
-                            .font(.system(size: 20, weight: .bold))
-                        Text(L("DELETE"))
-                            .font(.system(size: 10, weight: .black))
-                    }
-                    .foregroundColor(.white)
-                    .frame(width: 80)
-                    .frame(maxHeight: .infinity)
-                    .background(ComicTheme.Colors.crimsonRed)
-                    .clipShape(RoundedRectangle(cornerRadius: ComicTheme.Dimensions.panelCornerRadius))
-                }
-                .buttonStyle(.plain)
-            }
-            .opacity(offset < 0 ? 1 : 0)
-
-            // Main content
-            content
-                .offset(x: offset)
-                .gesture(
-                    DragGesture(minimumDistance: 20)
-                        .onChanged { value in
-                            let translation = value.translation.width
-                            // Only allow swiping left
-                            if translation < 0 {
-                                offset = translation * 0.8
-                            } else if offset < 0 {
-                                offset = min(0, offset + translation * 0.3)
-                            }
-                        }
-                        .onEnded { value in
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                if offset < deleteThreshold {
-                                    // Snap open to show delete button
-                                    offset = deleteThreshold
-                                } else {
-                                    offset = 0
-                                }
-                            }
-                        }
-                )
-        }
-        .contentShape(Rectangle())
-        .onTapGesture {
-            if offset < 0 {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                    offset = 0
-                }
             }
         }
     }
