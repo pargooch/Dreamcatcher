@@ -12,10 +12,10 @@ enum ComicTheme {
         static let inkBlack     = Color(red: 0x1A/255, green: 0x1A/255, blue: 0x1E/255)
         static let heroBlue     = Color(red: 0x05/255, green: 0x8C/255, blue: 0xD7/255)
         static let crimson      = Color(red: 0xFD/255, green: 0x5A/255, blue: 0x46/255)
-        static let goldenYellow = Color(red: 0xF5/255, green: 0x9E/255, blue: 0x0B/255)
+        static let goldenYellow = Color(red: 0xFF/255, green: 0xC5/255, blue: 0x67/255)
         static let emerald      = Color(red: 0x00/255, green: 0x99/255, blue: 0x5E/255)
         static let deepPurple   = Color(red: 0x7C/255, green: 0x3A/255, blue: 0xED/255)
-        static let hotPink      = Color(red: 0xEC/255, green: 0x48/255, blue: 0x99/255)
+        static let hotPink      = Color(red: 0xFB/255, green: 0x7D/255, blue: 0xA8/255)
 
         // Paper & surface tones (vintage, never pure white)
         static let agedPaper       = Color(red: 0xF5/255, green: 0xE6/255, blue: 0xCA/255)

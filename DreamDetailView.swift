@@ -11,8 +11,6 @@ struct DreamDetailView: View {
     @State private var aiService = AIService()
 
     // Editing states
-    @State private var isEditing = false
-    @State private var editedText = ""
     @State private var isEditingOriginal = false
     @State private var editedOriginalText = ""
     @State private var ttsService = TextToSpeechService()
@@ -133,65 +131,34 @@ struct DreamDetailView: View {
                 if let rewritten = dream.rewrittenText {
                     ComicPanelCard(titleBanner: L("Rewritten Dream (%@)", L(dream.tone?.capitalized ?? "")), bannerColor: ComicTheme.Colors.boldBlue) {
                         VStack(alignment: .leading, spacing: 12) {
-                            HStack {
-                                Spacer()
-                                Button {
-                                    if isEditing {
-                                        saveEditedText()
-                                    } else {
-                                        editedText = rewritten
-                                        isEditing = true
-                                    }
-                                } label: {
-                                    Label(isEditing ? L("Save") : L("Edit"), systemImage: isEditing ? "checkmark" : "pencil")
-                                }
-                                .buttonStyle(.comicSecondary)
-                                .frame(maxWidth: 160)
-
-                                if isEditing {
-                                    Button {
-                                        isEditing = false
-                                        editedText = ""
-                                    } label: {
-                                        Label(L("Cancel"), systemImage: "xmark")
-                                    }
-                                    .buttonStyle(.comicDestructive)
-                                    .frame(maxWidth: 160)
+                            NavigationLink {
+                                RewrittenDreamDetailView(dream: dream, store: store)
+                            } label: {
+                                HStack {
+                                    Text(rewritten)
+                                        .font(ComicTheme.Typography.speechBubble())
+                                        .foregroundColor(.primary)
+                                        .lineLimit(3)
+                                        .multilineTextAlignment(.leading)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                    Image(systemName: "chevron.right")
+                                        .font(.caption.weight(.bold))
+                                        .foregroundColor(.secondary)
                                 }
                             }
+                            .buttonStyle(.plain)
+                            .speechBubble()
 
-                            if isEditing {
-                                ZStack(alignment: .topLeading) {
-                                    Text(editedText.isEmpty ? " " : editedText)
-                                        .font(.body)
-                                        .padding(12)
-                                        .opacity(0)
-
-                                    TextEditor(text: $editedText)
-                                        .font(.body)
-                                        .scrollContentBackground(.hidden)
-                                        .scrollDisabled(true)
-                                        .padding(6)
-                                }
-                                .frame(minHeight: 100)
-                                .background(ComicTheme.Semantic.cardSurface(colorScheme))
-                                .cornerRadius(ComicTheme.Dimensions.buttonCornerRadius)
-                            } else {
-                                Text(rewritten)
-                                    .font(ComicTheme.Typography.speechBubble())
-                                    .speechBubble()
-
-                                Button {
-                                    ttsService.speak(rewritten)
-                                } label: {
-                                    Label(
-                                        ttsService.isSpeaking ? L("Stop") : L("Play Story"),
-                                        systemImage: ttsService.isSpeaking ? "stop.fill" : "play.fill"
-                                    )
-                                }
-                                .buttonStyle(.comicSecondary(color: ComicTheme.Colors.emeraldGreen))
-                                .accessibilityHint(ttsService.isSpeaking ? L("Tap to stop reading the story") : L("Tap to hear the story read aloud"))
+                            Button {
+                                ttsService.speak(rewritten)
+                            } label: {
+                                Label(
+                                    ttsService.isSpeaking ? L("Stop") : L("Play Story"),
+                                    systemImage: ttsService.isSpeaking ? "stop.fill" : "play.fill"
+                                )
                             }
+                            .buttonStyle(.comicSecondary(color: ComicTheme.Colors.emeraldGreen))
+                            .accessibilityHint(ttsService.isSpeaking ? L("Tap to stop reading the story") : L("Tap to hear the story read aloud"))
                         }
                     }
                 }
@@ -213,7 +180,6 @@ struct DreamDetailView: View {
                                             .fixedSize()
                                     }
                                     .buttonStyle(ToneChipStyle(isSelected: selectedTone == tone))
-                                    .disabled(isEditing)
                                 }
                             }
                         }
@@ -242,7 +208,6 @@ struct DreamDetailView: View {
                                 )
                             }
                             .buttonStyle(.comicPrimary(color: ComicTheme.Colors.boldBlue))
-                            .disabled(isEditing)
                         }
 
                         // Error message
@@ -359,14 +324,6 @@ struct DreamDetailView: View {
         isLoading = false
     }
 
-    func saveEditedText() {
-        var updated = dream
-        updated.rewrittenText = editedText
-        store.updateDream(updated)
-        isEditing = false
-        editedText = ""
-    }
-
     func saveOriginalText() {
         guard !editedOriginalText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         var updated = dream
@@ -374,6 +331,103 @@ struct DreamDetailView: View {
         store.updateDream(updated)
         isEditingOriginal = false
         editedOriginalText = ""
+    }
+}
+
+// MARK: - Rewritten Dream Detail View
+
+struct RewrittenDreamDetailView: View {
+    let dream: Dream
+    @ObservedObject var store: DreamStore
+    @Environment(\.colorScheme) private var colorScheme
+
+    @State private var isEditing = false
+    @State private var editedText = ""
+    @State private var ttsService = TextToSpeechService()
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: ComicTheme.Dimensions.gutterWidth) {
+                ComicPanelCard(titleBanner: L("Rewritten Dream (%@)", L(dream.tone?.capitalized ?? "")), bannerColor: ComicTheme.Colors.boldBlue) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Spacer()
+                            Button {
+                                if isEditing {
+                                    saveEditedText()
+                                } else {
+                                    editedText = dream.rewrittenText ?? ""
+                                    isEditing = true
+                                }
+                            } label: {
+                                Label(isEditing ? L("Save") : L("Edit"), systemImage: isEditing ? "checkmark" : "pencil")
+                            }
+                            .buttonStyle(.comicSecondary)
+                            .frame(maxWidth: 160)
+
+                            if isEditing {
+                                Button {
+                                    isEditing = false
+                                    editedText = ""
+                                } label: {
+                                    Label(L("Cancel"), systemImage: "xmark")
+                                }
+                                .buttonStyle(.comicDestructive)
+                                .frame(maxWidth: 160)
+                            }
+                        }
+
+                        if isEditing {
+                            ZStack(alignment: .topLeading) {
+                                Text(editedText.isEmpty ? " " : editedText)
+                                    .font(.body)
+                                    .padding(12)
+                                    .opacity(0)
+
+                                TextEditor(text: $editedText)
+                                    .font(.body)
+                                    .scrollContentBackground(.hidden)
+                                    .scrollDisabled(true)
+                                    .padding(6)
+                            }
+                            .frame(minHeight: 100)
+                            .background(ComicTheme.Semantic.cardSurface(colorScheme))
+                            .cornerRadius(ComicTheme.Dimensions.buttonCornerRadius)
+                        } else {
+                            Text(dream.rewrittenText ?? "")
+                                .font(ComicTheme.Typography.speechBubble())
+                                .speechBubble()
+                        }
+
+                        Button {
+                            ttsService.speak(dream.rewrittenText ?? "")
+                        } label: {
+                            Label(
+                                ttsService.isSpeaking ? L("Stop") : L("Play Story"),
+                                systemImage: ttsService.isSpeaking ? "stop.fill" : "play.fill"
+                            )
+                        }
+                        .buttonStyle(.comicSecondary(color: ComicTheme.Colors.emeraldGreen))
+                        .accessibilityHint(ttsService.isSpeaking ? L("Tap to stop reading the story") : L("Tap to hear the story read aloud"))
+                    }
+                }
+            }
+            .padding()
+        }
+        .halftoneBackground()
+        .navigationTitle(L("Rewritten Dream"))
+        .navigationBarTitleDisplayMode(.inline)
+        .onDisappear {
+            ttsService.stop()
+        }
+    }
+
+    private func saveEditedText() {
+        var updated = dream
+        updated.rewrittenText = editedText
+        store.updateDream(updated)
+        isEditing = false
+        editedText = ""
     }
 }
 
