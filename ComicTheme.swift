@@ -76,53 +76,32 @@ enum ComicTheme {
     // MARK: - Typography
 
     enum Typography {
-        /// RTL scripts (Arabic, Persian) break with .rounded/.serif/.monospaced design modifiers
-        /// because those variants lack proper ligature and cursive joining support.
-        private static var isRTL: Bool {
-            let lang = LocalizationManager.shared.currentLanguage
-            return lang == "ar" || lang == "fa"
-        }
-
         static func dreamTitle(_ size: CGFloat = 28) -> Font {
-            isRTL
-                ? .system(size: size, weight: .black)
-                : .system(size: size, weight: .black, design: .rounded)
+            .system(size: size, weight: .black)
         }
 
         static func sectionHeader(_ size: CGFloat = 13) -> Font {
-            isRTL
-                ? .system(size: size, weight: .semibold)
-                : .system(size: size, weight: .semibold, design: .serif)
+            .system(size: size, weight: .semibold)
         }
 
         static func soundEffect(_ size: CGFloat = 36) -> Font {
-            isRTL
-                ? .system(size: size, weight: .black)
-                : .system(size: size, weight: .black, design: .rounded).italic()
+            .system(size: size, weight: .black)
         }
 
         static func speechBubble(_ size: CGFloat = 15) -> Font {
-            isRTL
-                ? .system(size: size, weight: .medium)
-                : .system(size: size, weight: .medium, design: .serif)
+            .system(size: size, weight: .medium)
         }
 
         static func comicButton(_ size: CGFloat = 15) -> Font {
-            isRTL
-                ? .system(size: size, weight: .bold)
-                : .system(size: size, weight: .bold, design: .default)
+            .system(size: size, weight: .bold)
         }
 
         static func caption(_ size: CGFloat = 11) -> Font {
-            isRTL
-                ? .system(size: size, weight: .bold)
-                : .system(size: size, weight: .bold, design: .monospaced)
+            .system(size: size, weight: .semibold)
         }
 
         static func bodyText(_ size: CGFloat = 15) -> Font {
-            isRTL
-                ? .system(size: size, weight: .regular)
-                : .system(size: size, weight: .regular, design: .serif)
+            .system(size: size, weight: .regular)
         }
     }
 
