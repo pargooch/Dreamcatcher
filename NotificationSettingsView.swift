@@ -54,7 +54,10 @@ struct NotificationSettingsView: View {
                             NotificationTemplateRow(category: category)
 
                             if category != NotificationCategory.allCases.last {
-                                Divider()
+                                Rectangle()
+                                    .fill(ComicTheme.Semantic.panelBorder(colorScheme).opacity(0.15))
+                                    .frame(height: 0.5)
+                                    .padding(.horizontal, 4)
                             }
                         }
                     }
@@ -93,10 +96,11 @@ struct NotificationTemplateRow: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Image(systemName: category.icon)
-                    .foregroundColor(ComicTheme.Palette.heroBlue)
+                    .font(.body.weight(.bold))
+                    .foregroundColor(ComicTheme.Colors.boldBlue)
                     .frame(width: 24)
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -116,29 +120,30 @@ struct NotificationTemplateRow: View {
                     }
                 ))
                 .labelsHidden()
+                .tint(ComicTheme.Colors.emeraldGreen)
             }
 
             if isEnabled, let schedule = settings?.schedule {
                 Button {
                     showingScheduleSheet = true
                 } label: {
-                    HStack {
+                    HStack(spacing: 8) {
                         Image(systemName: "clock")
-                            .font(.caption)
+                            .font(.caption.weight(.bold))
                         Text(scheduleDescription(schedule))
                             .font(ComicTheme.Typography.speechBubble(12))
                         Spacer()
                         Image(systemName: "chevron.right")
-                            .font(.caption2)
+                            .font(.caption2.weight(.bold))
                     }
                     .foregroundColor(.secondary)
-                    .padding(.vertical, 6)
-                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 14)
                     .background(ComicTheme.Semantic.cardSurface(colorScheme))
-                    .cornerRadius(ComicTheme.Dimensions.badgeCornerRadius)
+                    .clipShape(Capsule())
                     .overlay(
-                        RoundedRectangle(cornerRadius: ComicTheme.Dimensions.badgeCornerRadius)
-                            .stroke(ComicTheme.Semantic.panelBorder(colorScheme).opacity(0.2), lineWidth: 1.5)
+                        Capsule()
+                            .stroke(ComicTheme.Semantic.panelBorder(colorScheme).opacity(0.2), lineWidth: 1)
                     )
                 }
             }
@@ -237,7 +242,9 @@ struct ScheduleEditorView: View {
                     ComicPanelCard(titleBanner: L("Preview"), bannerColor: ComicTheme.Colors.emeraldGreen) {
                         HStack(spacing: 10) {
                             Image(systemName: "bell.fill")
+                                .font(.body.weight(.bold))
                                 .foregroundColor(ComicTheme.Colors.emeraldGreen)
+                                .frame(width: 24)
                             Text(previewDescription)
                                 .font(ComicTheme.Typography.speechBubble(13))
                                 .foregroundColor(.secondary)
@@ -254,12 +261,16 @@ struct ScheduleEditorView: View {
                     Button(L("Cancel")) {
                         dismiss()
                     }
+                    .foregroundStyle(ComicTheme.Colors.crimsonRed)
+                    .fontWeight(.bold)
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(L("Save")) {
                         saveSchedule()
                         dismiss()
                     }
+                    .foregroundStyle(ComicTheme.Colors.emeraldGreen)
+                    .fontWeight(.bold)
                 }
             }
             .onAppear {
@@ -321,13 +332,21 @@ struct DayToggleButton: View {
     var body: some View {
         Button(action: action) {
             Text(dayName)
-                .font(.caption)
-                .fontWeight(isSelected ? .bold : .regular)
+                .font(.system(size: 12, weight: isSelected ? .bold : .medium))
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 8)
-                .background(isSelected ? ComicTheme.Palette.heroBlue : ComicTheme.Semantic.cardSurface(colorScheme))
+                .padding(.vertical, 10)
+                .background(isSelected ? ComicTheme.Colors.deepPurple : ComicTheme.Semantic.cardSurface(colorScheme))
                 .foregroundColor(isSelected ? .white : .primary)
-                .cornerRadius(ComicTheme.Dimensions.badgeCornerRadius)
+                .clipShape(Capsule())
+                .overlay(
+                    Capsule()
+                        .stroke(
+                            isSelected
+                                ? ComicTheme.Colors.deepPurple.opacity(0.5)
+                                : ComicTheme.Semantic.panelBorder(colorScheme).opacity(0.2),
+                            lineWidth: 1
+                        )
+                )
         }
         .buttonStyle(.plain)
     }

@@ -186,7 +186,7 @@ extension View {
     }
 }
 
-// MARK: - Comic Button Styles
+// MARK: - Retro Art Deco Button Styles
 
 struct ComicPrimaryButtonStyle: ButtonStyle {
     var color: Color = ComicTheme.Semantic.primaryAction
@@ -197,24 +197,31 @@ struct ComicPrimaryButtonStyle: ButtonStyle {
             .textCase(.uppercase)
             .tracking(1.5)
             .lineLimit(1)
-            .minimumScaleFactor(0.7)
+            .minimumScaleFactor(0.6)
             .foregroundStyle(.white)
             .padding(.horizontal, 20)
-            .padding(.vertical, 12)
+            .padding(.vertical, 13)
             .frame(maxWidth: .infinity)
-            .background(color)
-            .clipShape(RoundedRectangle(cornerRadius: ComicTheme.Dimensions.buttonCornerRadius))
+            .background(
+                LinearGradient(
+                    colors: [color, color.opacity(0.85)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+            .clipShape(Capsule())
             .overlay(
-                RoundedRectangle(cornerRadius: ComicTheme.Dimensions.buttonCornerRadius)
-                    .stroke(color.opacity(0.5), lineWidth: ComicTheme.Dimensions.buttonBorderWidth)
+                Capsule()
+                    .stroke(color.opacity(0.6), lineWidth: 1.5)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: ComicTheme.Dimensions.buttonCornerRadius + 3)
-                    .stroke(color.opacity(0.2), lineWidth: 0.75)
-                    .padding(-3)
+                Capsule()
+                    .stroke(.white.opacity(0.15), lineWidth: 0.75)
+                    .padding(4)
             )
             .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
-            .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
+            .opacity(configuration.isPressed ? 0.9 : 1.0)
+            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
     }
 }
 
@@ -228,24 +235,25 @@ struct ComicSecondaryButtonStyle: ButtonStyle {
             .textCase(.uppercase)
             .tracking(1.5)
             .lineLimit(1)
-            .minimumScaleFactor(0.7)
+            .minimumScaleFactor(0.6)
             .foregroundStyle(color)
             .padding(.horizontal, 16)
-            .padding(.vertical, 10)
+            .padding(.vertical, 11)
             .frame(maxWidth: .infinity)
             .background(ComicTheme.Semantic.cardSurface(colorScheme))
-            .clipShape(RoundedRectangle(cornerRadius: ComicTheme.Dimensions.buttonCornerRadius))
+            .clipShape(Capsule())
             .overlay(
-                RoundedRectangle(cornerRadius: ComicTheme.Dimensions.buttonCornerRadius)
-                    .stroke(color.opacity(0.6), lineWidth: ComicTheme.Dimensions.buttonBorderWidth)
+                Capsule()
+                    .stroke(color.opacity(0.5), lineWidth: 1.5)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: ComicTheme.Dimensions.buttonCornerRadius + 3)
-                    .stroke(color.opacity(0.15), lineWidth: 0.75)
-                    .padding(-3)
+                Capsule()
+                    .stroke(color.opacity(0.12), lineWidth: 0.75)
+                    .padding(4)
             )
             .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
-            .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
+            .opacity(configuration.isPressed ? 0.85 : 1.0)
+            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
     }
 }
 
@@ -259,24 +267,25 @@ struct ComicDestructiveButtonStyle: ButtonStyle {
             .textCase(.uppercase)
             .tracking(1.5)
             .lineLimit(1)
-            .minimumScaleFactor(0.7)
+            .minimumScaleFactor(0.6)
             .foregroundStyle(color)
             .padding(.horizontal, 16)
-            .padding(.vertical, 10)
+            .padding(.vertical, 11)
             .frame(maxWidth: .infinity)
             .background(ComicTheme.Semantic.cardSurface(colorScheme))
-            .clipShape(RoundedRectangle(cornerRadius: ComicTheme.Dimensions.buttonCornerRadius))
+            .clipShape(Capsule())
             .overlay(
-                RoundedRectangle(cornerRadius: ComicTheme.Dimensions.buttonCornerRadius)
-                    .stroke(color.opacity(0.6), lineWidth: ComicTheme.Dimensions.buttonBorderWidth)
+                Capsule()
+                    .stroke(color.opacity(0.5), lineWidth: 1.5)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: ComicTheme.Dimensions.buttonCornerRadius + 3)
-                    .stroke(color.opacity(0.15), lineWidth: 0.75)
-                    .padding(-3)
+                Capsule()
+                    .stroke(color.opacity(0.12), lineWidth: 0.75)
+                    .padding(4)
             )
             .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
-            .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
+            .opacity(configuration.isPressed ? 0.85 : 1.0)
+            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
     }
 }
 

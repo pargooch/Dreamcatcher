@@ -16,6 +16,7 @@ struct DreamNotificationSection: View {
             VStack(alignment: .leading, spacing: 16) {
                 HStack {
                     Image(systemName: "bell.fill")
+                        .font(.body.weight(.bold))
                         .foregroundColor(ComicTheme.Colors.goldenYellow)
 
                     Spacer()
@@ -99,6 +100,7 @@ struct DreamReminderRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: reminder.notificationType.icon)
+                .font(.body.weight(.bold))
                 .foregroundColor(isExpired ? .secondary : ComicTheme.Colors.boldBlue)
                 .frame(width: 24)
 
@@ -110,7 +112,7 @@ struct DreamReminderRow: View {
                 if isExpired {
                     Text(L("EXPIRED"))
                         .font(.system(size: 10, weight: .bold))
-                        .tracking(0.5)
+                        .tracking(1.0)
                         .foregroundColor(ComicTheme.Colors.crimsonRed)
                 } else {
                     Text(timeDescription)
@@ -125,15 +127,19 @@ struct DreamReminderRow: View {
                 onDelete()
             } label: {
                 Image(systemName: "trash")
-                    .font(.subheadline)
+                    .font(.subheadline.weight(.bold))
                     .foregroundColor(ComicTheme.Colors.crimsonRed)
             }
             .buttonStyle(.plain)
         }
-        .padding(.vertical, 8)
-        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .padding(.horizontal, 14)
         .background(ComicTheme.Semantic.cardSurface(colorScheme))
-        .cornerRadius(ComicTheme.Dimensions.buttonCornerRadius)
+        .clipShape(Capsule())
+        .overlay(
+            Capsule()
+                .stroke(ComicTheme.Semantic.panelBorder(colorScheme).opacity(0.3), lineWidth: 1)
+        )
     }
 }
 
@@ -145,6 +151,7 @@ struct AddDreamReminderSheet: View {
     let onAdd: () -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @StateObject private var notificationManager = NotificationManager.shared
 
     @State private var selectedType: NotificationCategory = .dreamReflection
@@ -184,100 +191,125 @@ struct AddDreamReminderSheet: View {
 
     var body: some View {
         NavigationView {
-            Form {
-                Section {
-                    ForEach(availableTypes) { type in
-                        Button {
-                            selectedType = type
-                        } label: {
-                            HStack {
-                                Image(systemName: type.icon)
-                                    .foregroundColor(ComicTheme.Colors.boldBlue)
-                                    .frame(width: 24)
+            ScrollView {
+                VStack(spacing: ComicTheme.Dimensions.gutterWidth) {
+                    // Reminder type
+                    ComicPanelCard(titleBanner: L("Reminder Type"), bannerColor: ComicTheme.Colors.boldBlue) {
+                        VStack(spacing: 8) {
+                            ForEach(availableTypes) { type in
+                                Button {
+                                    selectedType = type
+                                } label: {
+                                    HStack(spacing: 12) {
+                                        Image(systemName: type.icon)
+                                            .font(.body.weight(.bold))
+                                            .foregroundColor(selectedType == type ? ComicTheme.Colors.boldBlue : .secondary)
+                                            .frame(width: 24)
 
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(type.displayName)
-                                        .foregroundColor(.primary)
-                                    Text(type.description)
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text(type.displayName)
+                                                .font(ComicTheme.Typography.comicButton(14))
+                                                .foregroundColor(.primary)
+                                            Text(type.description)
+                                                .font(ComicTheme.Typography.speechBubble(11))
+                                                .foregroundColor(.secondary)
+                                        }
 
-                                Spacer()
+                                        Spacer()
 
-                                if selectedType == type {
-                                    Image(systemName: "checkmark")
-                                        .foregroundColor(ComicTheme.Colors.boldBlue)
-                                }
-                            }
-                        }
-                    }
-                } header: {
-                    Text(L("REMINDER TYPE"))
-                        .font(ComicTheme.Typography.sectionHeader(11))
-                        .tracking(1)
-                }
-
-                Section {
-                    ForEach(ReminderTime.allCases) { time in
-                        if time != .custom {
-                            Button {
-                                selectedTime = time
-                            } label: {
-                                HStack {
-                                    Text(time.rawValue)
-                                        .foregroundColor(.primary)
-                                    Spacer()
-                                    if selectedTime == time {
-                                        Image(systemName: "checkmark")
-                                            .foregroundColor(ComicTheme.Colors.boldBlue)
+                                        if selectedType == type {
+                                            Image(systemName: "checkmark.circle.fill")
+                                                .foregroundColor(ComicTheme.Colors.boldBlue)
+                                        }
                                     }
+                                    .padding(.vertical, 8)
+                                    .padding(.horizontal, 12)
+                                    .background(
+                                        selectedType == type
+                                            ? ComicTheme.Colors.boldBlue.opacity(0.08)
+                                            : Color.clear
+                                    )
+                                    .clipShape(Capsule())
+                                    .overlay(
+                                        Capsule()
+                                            .stroke(
+                                                selectedType == type
+                                                    ? ComicTheme.Colors.boldBlue.opacity(0.3)
+                                                    : ComicTheme.Semantic.panelBorder(colorScheme).opacity(0.15),
+                                                lineWidth: 1
+                                            )
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+
+                    // When
+                    ComicPanelCard(titleBanner: L("When"), bannerColor: ComicTheme.Colors.goldenYellow) {
+                        VStack(spacing: 8) {
+                            // Preset times in a grid
+                            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                                ForEach(ReminderTime.allCases) { time in
+                                    Button {
+                                        selectedTime = time
+                                    } label: {
+                                        Text(time == .custom ? L("Custom") : time.rawValue)
+                                            .font(ComicTheme.Typography.comicButton(13))
+                                            .foregroundColor(selectedTime == time ? .white : .primary)
+                                            .frame(maxWidth: .infinity)
+                                            .padding(.vertical, 10)
+                                            .background(
+                                                selectedTime == time
+                                                    ? ComicTheme.Colors.goldenYellow
+                                                    : ComicTheme.Semantic.cardSurface(colorScheme)
+                                            )
+                                            .clipShape(Capsule())
+                                            .overlay(
+                                                Capsule()
+                                                    .stroke(
+                                                        selectedTime == time
+                                                            ? ComicTheme.Colors.goldenYellow.opacity(0.5)
+                                                            : ComicTheme.Semantic.panelBorder(colorScheme).opacity(0.2),
+                                                        lineWidth: 1
+                                                    )
+                                            )
+                                    }
+                                    .buttonStyle(.plain)
                                 }
                             }
-                        }
-                    }
 
-                    Button {
-                        selectedTime = .custom
-                    } label: {
-                        HStack {
-                            Text(L("Custom"))
-                                .foregroundColor(.primary)
-                            Spacer()
                             if selectedTime == .custom {
-                                Image(systemName: "checkmark")
-                                    .foregroundColor(ComicTheme.Colors.boldBlue)
+                                DatePicker(
+                                    L("Date & Time"),
+                                    selection: $customDate,
+                                    in: Date()...,
+                                    displayedComponents: [.date, .hourAndMinute]
+                                )
+                                .font(ComicTheme.Typography.speechBubble(13))
+                                .padding(.top, 8)
                             }
                         }
                     }
 
-                    if selectedTime == .custom {
-                        DatePicker(
-                            L("Date & Time"),
-                            selection: $customDate,
-                            in: Date()...,
-                            displayedComponents: [.date, .hourAndMinute]
-                        )
+                    // Preview
+                    ComicPanelCard(titleBanner: L("Preview"), bannerColor: ComicTheme.Colors.emeraldGreen) {
+                        HStack(spacing: 10) {
+                            Image(systemName: "bell.fill")
+                                .font(.body.weight(.bold))
+                                .foregroundColor(ComicTheme.Colors.emeraldGreen)
+                                .frame(width: 24)
+                            Text(previewText)
+                                .font(ComicTheme.Typography.speechBubble(13))
+                                .foregroundColor(.secondary)
+                        }
                     }
-                } header: {
-                    Text(L("WHEN"))
-                        .font(ComicTheme.Typography.sectionHeader(11))
-                        .tracking(1)
                 }
-
-                Section {
-                    Text(previewText)
-                        .font(.callout)
-                        .foregroundColor(.secondary)
-                } header: {
-                    Text(L("PREVIEW"))
-                        .font(ComicTheme.Typography.sectionHeader(11))
-                        .tracking(1)
-                }
+                .padding()
             }
+            .halftoneBackground()
             .navigationTitle(L("Add Reminder"))
             .navigationBarTitleDisplayMode(.inline)
-            .tint(ComicTheme.Colors.boldBlue)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(L("Cancel")) {
