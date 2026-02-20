@@ -123,7 +123,6 @@ enum KeyboardDismissHelper {
         let doneButton = UIBarButtonItem(title: L("Done"), style: .done, target: nil, action: #selector(UIApplication.dismissKeyboard))
         toolbar.items = [spacer, doneButton]
 
-        UITextField.appearance().inputAccessoryView = toolbar
         UITextView.appearance().inputAccessoryView = toolbar
     }
 

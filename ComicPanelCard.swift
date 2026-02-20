@@ -1,5 +1,60 @@
 import SwiftUI
 
+// MARK: - Art Deco Corner Ornament
+
+struct ArtDecoCornerOrnament: Shape {
+    enum Corner { case topLeading, topTrailing, bottomLeading, bottomTrailing }
+    let corner: Corner
+    let armLength: CGFloat
+    let thickness: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let d = thickness * 2.5
+
+        switch corner {
+        case .topLeading:
+            path.addRect(CGRect(x: 0, y: 0, width: thickness, height: armLength))
+            path.addRect(CGRect(x: 0, y: 0, width: armLength, height: thickness))
+            path.move(to: CGPoint(x: 0, y: 0))
+            path.addLine(to: CGPoint(x: d, y: 0))
+            path.addLine(to: CGPoint(x: 0, y: d))
+            path.closeSubpath()
+
+        case .topTrailing:
+            let w = rect.width
+            path.addRect(CGRect(x: w - thickness, y: 0, width: thickness, height: armLength))
+            path.addRect(CGRect(x: w - armLength, y: 0, width: armLength, height: thickness))
+            path.move(to: CGPoint(x: w, y: 0))
+            path.addLine(to: CGPoint(x: w - d, y: 0))
+            path.addLine(to: CGPoint(x: w, y: d))
+            path.closeSubpath()
+
+        case .bottomLeading:
+            let h = rect.height
+            path.addRect(CGRect(x: 0, y: h - armLength, width: thickness, height: armLength))
+            path.addRect(CGRect(x: 0, y: h - thickness, width: armLength, height: thickness))
+            path.move(to: CGPoint(x: 0, y: h))
+            path.addLine(to: CGPoint(x: d, y: h))
+            path.addLine(to: CGPoint(x: 0, y: h - d))
+            path.closeSubpath()
+
+        case .bottomTrailing:
+            let w = rect.width
+            let h = rect.height
+            path.addRect(CGRect(x: w - thickness, y: h - armLength, width: thickness, height: armLength))
+            path.addRect(CGRect(x: w - armLength, y: h - thickness, width: armLength, height: thickness))
+            path.move(to: CGPoint(x: w, y: h))
+            path.addLine(to: CGPoint(x: w - d, y: h))
+            path.addLine(to: CGPoint(x: w, y: h - d))
+            path.closeSubpath()
+        }
+        return path
+    }
+}
+
+// MARK: - Art Deco Panel Card
+
 struct ComicPanelCard<Content: View>: View {
     let titleBanner: String?
     let bannerColor: Color
@@ -16,37 +71,109 @@ struct ComicPanelCard<Content: View>: View {
         self.content = content()
     }
 
+    private var bannerTextColor: Color {
+        if colorScheme == .light && bannerColor == ComicTheme.Palette.goldenYellow {
+            return ComicTheme.Palette.antiqueBrass
+        }
+        return bannerColor
+    }
+
     var body: some View {
+        let outerRadius = ComicTheme.Dimensions.panelCornerRadius
+        let innerInset = ComicTheme.Dimensions.panelBorderGap + ComicTheme.Dimensions.panelBorderWidth
+        let innerRadius = max(outerRadius - innerInset, 0)
+
         VStack(alignment: .leading, spacing: 0) {
             if let title = titleBanner {
-                Text(title.uppercased())
-                    .font(ComicTheme.Typography.sectionHeader())
-                    .tracking(1.5)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-                    .foregroundStyle(bannerColor == ComicTheme.Palette.goldenYellow ? ComicTheme.Palette.inkBlack : .white)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(bannerColor)
+                artDecoBanner(title: title)
             }
 
             content
                 .padding()
         }
-        .background(
-            ZStack {
-                ComicTheme.Semantic.cardSurface(colorScheme)
-                HalftoneBackground(dotSpacing: 18, opacity: 0.03)
-            }
-        )
-        .clipShape(RoundedRectangle(cornerRadius: ComicTheme.Dimensions.panelCornerRadius))
+        .background(ComicTheme.Semantic.cardSurface(colorScheme))
+        .clipShape(RoundedRectangle(cornerRadius: outerRadius))
+        // Outer border
         .overlay(
-            RoundedRectangle(cornerRadius: ComicTheme.Dimensions.panelCornerRadius)
+            RoundedRectangle(cornerRadius: outerRadius)
                 .stroke(
                     ComicTheme.Semantic.panelBorder(colorScheme),
                     lineWidth: ComicTheme.Dimensions.panelBorderWidth
                 )
         )
+        // Inner border
+        .overlay(
+            RoundedRectangle(cornerRadius: innerRadius)
+                .stroke(
+                    ComicTheme.Semantic.frameBorderInner(colorScheme),
+                    lineWidth: ComicTheme.Dimensions.panelInnerBorderWidth
+                )
+                .padding(innerInset)
+        )
+        // Corner ornaments
+        .overlay(cornerOrnaments)
+    }
+
+    // MARK: - Art Deco Banner
+
+    @ViewBuilder
+    private func artDecoBanner(title: String) -> some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 10) {
+                // Left decorative line
+                Rectangle()
+                    .fill(bannerTextColor.opacity(0.4))
+                    .frame(minWidth: 8, maxWidth: 40, minHeight: 1, maxHeight: 1)
+
+                Text(title.uppercased())
+                    .font(ComicTheme.Typography.sectionHeader())
+                    .tracking(2.5)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                    .foregroundStyle(bannerTextColor)
+                    .layoutPriority(1)
+
+                // Right decorative line
+                Rectangle()
+                    .fill(bannerTextColor.opacity(0.4))
+                    .frame(minWidth: 8, maxWidth: 40, minHeight: 1, maxHeight: 1)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+
+            // Bottom separator
+            Rectangle()
+                .fill(bannerTextColor.opacity(0.2))
+                .frame(height: 0.5)
+                .padding(.horizontal, 12)
+        }
+        .background(bannerColor.opacity(0.06))
+    }
+
+    // MARK: - Corner Ornaments
+
+    private var cornerOrnaments: some View {
+        let ornamentColor = ComicTheme.Semantic.cornerOrnament(colorScheme)
+        let arm = ComicTheme.Dimensions.cornerOrnamentSize
+        let thickness: CGFloat = 1.5
+
+        return GeometryReader { geo in
+            ArtDecoCornerOrnament(corner: .topLeading, armLength: arm, thickness: thickness)
+                .fill(ornamentColor)
+                .frame(width: geo.size.width, height: geo.size.height)
+
+            ArtDecoCornerOrnament(corner: .topTrailing, armLength: arm, thickness: thickness)
+                .fill(ornamentColor)
+                .frame(width: geo.size.width, height: geo.size.height)
+
+            ArtDecoCornerOrnament(corner: .bottomLeading, armLength: arm, thickness: thickness)
+                .fill(ornamentColor)
+                .frame(width: geo.size.width, height: geo.size.height)
+
+            ArtDecoCornerOrnament(corner: .bottomTrailing, armLength: arm, thickness: thickness)
+                .fill(ornamentColor)
+                .frame(width: geo.size.width, height: geo.size.height)
+        }
+        .allowsHitTesting(false)
     }
 }

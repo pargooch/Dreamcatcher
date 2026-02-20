@@ -105,7 +105,12 @@ struct NewDreamView: View {
                     .disabled(dreamText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
                 .padding()
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                }
             }
+            .scrollDismissesKeyboard(.interactively)
             .halftoneBackground()
             .navigationTitle(L("New Dream"))
             .navigationBarTitleDisplayMode(.inline)

@@ -1,6 +1,43 @@
 import SwiftUI
 
-// MARK: - Halftone Dot Pattern
+// MARK: - Art Deco Diamond Crosshatch Pattern
+
+struct ArtDecoBackground: View {
+    @Environment(\.colorScheme) private var colorScheme
+    var lineSpacing: CGFloat = 24
+    var opacity: Double = 0.035
+
+    var body: some View {
+        Canvas { context, size in
+            let lineColor: Color = colorScheme == .dark ? .white : Color(white: 0.3)
+            let style = StrokeStyle(lineWidth: 0.5)
+            let resolvedColor = lineColor.opacity(opacity)
+
+            // Diagonal lines going top-left to bottom-right
+            var x: CGFloat = -size.height
+            while x < size.width + size.height {
+                var linePath = Path()
+                linePath.move(to: CGPoint(x: x, y: 0))
+                linePath.addLine(to: CGPoint(x: x + size.height, y: size.height))
+                context.stroke(linePath, with: .color(resolvedColor), style: style)
+                x += lineSpacing
+            }
+
+            // Diagonal lines going top-right to bottom-left
+            x = 0
+            while x < size.width + size.height {
+                var linePath = Path()
+                linePath.move(to: CGPoint(x: x, y: 0))
+                linePath.addLine(to: CGPoint(x: x - size.height, y: size.height))
+                context.stroke(linePath, with: .color(resolvedColor), style: style)
+                x += lineSpacing
+            }
+        }
+        .allowsHitTesting(false)
+    }
+}
+
+// MARK: - Legacy Halftone (kept for potential reuse)
 
 struct HalftoneBackground: View {
     @Environment(\.colorScheme) private var colorScheme
@@ -32,34 +69,7 @@ struct HalftoneBackground: View {
     }
 }
 
-// MARK: - Paper Grain Texture
-
-struct PaperGrainTexture: View {
-    @Environment(\.colorScheme) private var colorScheme
-
-    var body: some View {
-        Canvas { context, size in
-            let grainColor: Color = colorScheme == .dark ? .white : .black
-            let step: CGFloat = 3
-            for x in stride(from: CGFloat(0), to: size.width, by: step) {
-                for y in stride(from: CGFloat(0), to: size.height, by: step) {
-                    let hash = (Int(x * 7 + y * 13) % 100)
-                    if hash < 15 {
-                        let dotSize = CGFloat(hash % 3 + 1) * 0.4
-                        let rect = CGRect(x: x, y: y, width: dotSize, height: dotSize)
-                        context.fill(
-                            Path(ellipseIn: rect),
-                            with: .color(grainColor.opacity(0.025))
-                        )
-                    }
-                }
-            }
-        }
-        .allowsHitTesting(false)
-    }
-}
-
-// MARK: - Composite Comic Background
+// MARK: - Composite Background
 
 struct ComicBackground: View {
     @Environment(\.colorScheme) private var colorScheme
@@ -69,10 +79,7 @@ struct ComicBackground: View {
             ComicTheme.Semantic.background(colorScheme)
                 .ignoresSafeArea()
 
-            PaperGrainTexture()
-                .ignoresSafeArea()
-
-            HalftoneBackground(dotSpacing: 12, opacity: 0.07)
+            ArtDecoBackground(lineSpacing: 24, opacity: 0.035)
                 .ignoresSafeArea()
         }
         .allowsHitTesting(false)

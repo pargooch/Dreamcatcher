@@ -9,7 +9,7 @@ struct SpeechBubbleShape: Shape {
 
     func path(in rect: CGRect) -> Path {
         var path = Path()
-        let cornerRadius: CGFloat = ComicTheme.Dimensions.panelCornerRadius
+        let cornerRadius: CGFloat = ComicTheme.Dimensions.speechBubbleCornerRadius
         let bodyRect = CGRect(
             x: rect.minX, y: rect.minY,
             width: rect.width, height: rect.height - tailHeight

@@ -17,6 +17,10 @@ enum ComicTheme {
         static let deepPurple   = Color(red: 0x7C/255, green: 0x3A/255, blue: 0xED/255)
         static let hotPink      = Color(red: 0xFB/255, green: 0x7D/255, blue: 0xA8/255)
 
+        // Art Deco metallic accents
+        static let antiqueBrass   = Color(red: 0xB0/255, green: 0x8D/255, blue: 0x57/255)
+        static let champagneGold  = Color(red: 0xD4/255, green: 0xAF/255, blue: 0x6A/255)
+
         // Paper & surface tones (vintage, never pure white)
         static let agedPaper       = Color(red: 0xF5/255, green: 0xE6/255, blue: 0xCA/255)
         static let agedPaperDark   = Color(red: 0x2A/255, green: 0x24/255, blue: 0x1E/255)
@@ -43,9 +47,15 @@ enum ComicTheme {
             cs == .dark ? Palette.panelSurfaceDark : Palette.panelSurface
         }
 
-        // Borders
+        // Borders — Art Deco gold tones
         static func panelBorder(_ cs: ColorScheme) -> Color {
-            cs == .dark ? Color(white: 0.85) : Palette.inkBlack
+            cs == .dark ? Palette.champagneGold : Palette.antiqueBrass
+        }
+        static func frameBorderInner(_ cs: ColorScheme) -> Color {
+            cs == .dark ? Palette.champagneGold.opacity(0.5) : Palette.antiqueBrass.opacity(0.6)
+        }
+        static func cornerOrnament(_ cs: ColorScheme) -> Color {
+            cs == .dark ? Palette.champagneGold : Palette.antiqueBrass
         }
     }
 
@@ -81,8 +91,8 @@ enum ComicTheme {
 
         static func sectionHeader(_ size: CGFloat = 13) -> Font {
             isRTL
-                ? .system(size: size, weight: .heavy)
-                : .system(size: size, weight: .heavy, design: .rounded)
+                ? .system(size: size, weight: .semibold)
+                : .system(size: size, weight: .semibold, design: .serif)
         }
 
         static func soundEffect(_ size: CGFloat = 36) -> Font {
@@ -99,8 +109,8 @@ enum ComicTheme {
 
         static func comicButton(_ size: CGFloat = 15) -> Font {
             isRTL
-                ? .system(size: size, weight: .heavy)
-                : .system(size: size, weight: .heavy, design: .rounded)
+                ? .system(size: size, weight: .bold)
+                : .system(size: size, weight: .bold, design: .default)
         }
 
         static func caption(_ size: CGFloat = 11) -> Font {
@@ -120,13 +130,17 @@ enum ComicTheme {
 
     enum Dimensions {
         static let panelBorderWidth: CGFloat = 1.5
-        static let panelCornerRadius: CGFloat = 14
-        static let gutterWidth: CGFloat = 14
+        static let panelInnerBorderWidth: CGFloat = 0.75
+        static let panelBorderGap: CGFloat = 3
+        static let panelCornerRadius: CGFloat = 4
+        static let cornerOrnamentSize: CGFloat = 14
+        static let gutterWidth: CGFloat = 16
         static let cardShadowRadius: CGFloat = 0
         static let buttonBorderWidth: CGFloat = 1.5
-        static let buttonCornerRadius: CGFloat = 12
-        static let speechBubbleBorderWidth: CGFloat = 1.5
-        static let badgeCornerRadius: CGFloat = 8
+        static let buttonCornerRadius: CGFloat = 6
+        static let speechBubbleBorderWidth: CGFloat = 1.0
+        static let speechBubbleCornerRadius: CGFloat = 12
+        static let badgeCornerRadius: CGFloat = 4
     }
 
     // MARK: - Adaptive Colors (legacy helper)
@@ -181,7 +195,7 @@ struct ComicPrimaryButtonStyle: ButtonStyle {
         configuration.label
             .font(ComicTheme.Typography.comicButton())
             .textCase(.uppercase)
-            .tracking(1.0)
+            .tracking(1.5)
             .lineLimit(1)
             .minimumScaleFactor(0.7)
             .foregroundStyle(.white)
@@ -192,10 +206,15 @@ struct ComicPrimaryButtonStyle: ButtonStyle {
             .clipShape(RoundedRectangle(cornerRadius: ComicTheme.Dimensions.buttonCornerRadius))
             .overlay(
                 RoundedRectangle(cornerRadius: ComicTheme.Dimensions.buttonCornerRadius)
-                    .stroke(ComicTheme.Palette.inkBlack, lineWidth: ComicTheme.Dimensions.buttonBorderWidth)
+                    .stroke(color.opacity(0.5), lineWidth: ComicTheme.Dimensions.buttonBorderWidth)
             )
-            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
-            .animation(.spring(response: 0.2), value: configuration.isPressed)
+            .overlay(
+                RoundedRectangle(cornerRadius: ComicTheme.Dimensions.buttonCornerRadius + 3)
+                    .stroke(color.opacity(0.2), lineWidth: 0.75)
+                    .padding(-3)
+            )
+            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
+            .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
     }
 }
 
@@ -207,7 +226,7 @@ struct ComicSecondaryButtonStyle: ButtonStyle {
         configuration.label
             .font(ComicTheme.Typography.comicButton(14))
             .textCase(.uppercase)
-            .tracking(1.0)
+            .tracking(1.5)
             .lineLimit(1)
             .minimumScaleFactor(0.7)
             .foregroundStyle(color)
@@ -218,10 +237,15 @@ struct ComicSecondaryButtonStyle: ButtonStyle {
             .clipShape(RoundedRectangle(cornerRadius: ComicTheme.Dimensions.buttonCornerRadius))
             .overlay(
                 RoundedRectangle(cornerRadius: ComicTheme.Dimensions.buttonCornerRadius)
-                    .stroke(color, lineWidth: ComicTheme.Dimensions.buttonBorderWidth)
+                    .stroke(color.opacity(0.6), lineWidth: ComicTheme.Dimensions.buttonBorderWidth)
             )
-            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
-            .animation(.spring(response: 0.2), value: configuration.isPressed)
+            .overlay(
+                RoundedRectangle(cornerRadius: ComicTheme.Dimensions.buttonCornerRadius + 3)
+                    .stroke(color.opacity(0.15), lineWidth: 0.75)
+                    .padding(-3)
+            )
+            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
+            .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
     }
 }
 
@@ -229,13 +253,14 @@ struct ComicDestructiveButtonStyle: ButtonStyle {
     @Environment(\.colorScheme) private var colorScheme
 
     func makeBody(configuration: Configuration) -> some View {
+        let color = ComicTheme.Semantic.destructiveAction
         configuration.label
             .font(ComicTheme.Typography.comicButton(14))
             .textCase(.uppercase)
-            .tracking(1.0)
+            .tracking(1.5)
             .lineLimit(1)
             .minimumScaleFactor(0.7)
-            .foregroundStyle(ComicTheme.Semantic.destructiveAction)
+            .foregroundStyle(color)
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
             .frame(maxWidth: .infinity)
@@ -243,10 +268,15 @@ struct ComicDestructiveButtonStyle: ButtonStyle {
             .clipShape(RoundedRectangle(cornerRadius: ComicTheme.Dimensions.buttonCornerRadius))
             .overlay(
                 RoundedRectangle(cornerRadius: ComicTheme.Dimensions.buttonCornerRadius)
-                    .stroke(ComicTheme.Semantic.destructiveAction, lineWidth: ComicTheme.Dimensions.buttonBorderWidth)
+                    .stroke(color.opacity(0.6), lineWidth: ComicTheme.Dimensions.buttonBorderWidth)
             )
-            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
-            .animation(.spring(response: 0.2), value: configuration.isPressed)
+            .overlay(
+                RoundedRectangle(cornerRadius: ComicTheme.Dimensions.buttonCornerRadius + 3)
+                    .stroke(color.opacity(0.15), lineWidth: 0.75)
+                    .padding(-3)
+            )
+            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
+            .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
     }
 }
 
