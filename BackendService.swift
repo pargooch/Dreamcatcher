@@ -332,6 +332,17 @@ class BackendService {
         return try await send(request, as: MessageResponse.self)
     }
 
+    func resetPassword(token: String, password: String) async throws -> MessageResponse {
+        let url = try makeURL(path: "auth/reset-password")
+        let body: [String: Any] = [
+            "token": token,
+            "password": password
+        ]
+        let data = try JSONSerialization.data(withJSONObject: body)
+        let request = try makeRequest(url: url, method: "POST", body: data, requiresAuth: false)
+        return try await send(request, as: MessageResponse.self)
+    }
+
     // MARK: - Profile
 
     func getMyProfile() async throws -> UserProfile {

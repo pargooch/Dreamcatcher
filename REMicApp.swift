@@ -11,6 +11,7 @@ struct REMicApp: App {
     @State private var analysisService = DreamAnalysisService()
     @State private var toastMessage: String?
     @State private var toastIsError = false
+    @State private var resetPasswordToken: String?
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
@@ -77,6 +78,14 @@ struct REMicApp: App {
                     Task { await AuthManager.shared.refreshUser() }
                 }
             }
+            .sheet(isPresented: Binding(
+                get: { resetPasswordToken != nil },
+                set: { if !$0 { resetPasswordToken = nil } }
+            )) {
+                if let token = resetPasswordToken {
+                    ResetPasswordSheet(token: token)
+                }
+            }
         }
     }
     // MARK: - Deep Link Handling
@@ -84,26 +93,48 @@ struct REMicApp: App {
     private func handleDeepLink(_ url: URL) {
         guard let components = URLComponents(url: url, resolvingAgainstBaseURL: true) else { return }
 
-        // Handle both remic://verify and https://api.remic.app/api/auth/verify-email
-        let isVerifyScheme = url.scheme == "remic" && url.host == "verify"
-        let isVerifyUniversal = url.host == "api.remic.app" && url.path.contains("/auth/verify-email")
-
-        guard isVerifyScheme || isVerifyUniversal else { return }
-
         let params = Dictionary(uniqueKeysWithValues:
             (components.queryItems ?? []).compactMap { item in
                 item.value.map { (item.name, $0) }
             }
         )
 
-        let status = params["status"]
-        let message = params["message"]
+        // Reset password: remic://reset-password?token=xxx or https://api.remic.app/api/auth/reset-password?token=xxx
+        let isResetScheme = url.scheme == "remic" && url.host == "reset-password"
+        let isResetUniversal = url.host == "api.remic.app" && url.path.contains("/auth/reset-password")
 
-        if status == "success" {
-            showToast(L("Email verified successfully!"), isError: false)
-            Task { await AuthManager.shared.refreshUser() }
-        } else if status == "error" {
-            showToast(message ?? L("Verification failed"), isError: true)
+        if isResetScheme || isResetUniversal {
+            // Skip if already authenticated
+            guard !authManager.isAuthenticated else {
+                showToast(L("You're already signed in"), isError: false)
+                return
+            }
+            guard let token = params["token"], !token.isEmpty else { return }
+
+            // Dismiss any open auth sheets (e.g. ForgotPasswordSheet) first
+            NotificationCenter.default.post(name: .dismissAuthSheets, object: nil)
+
+            // Brief delay to let the sheet dismiss before presenting the new one
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                resetPasswordToken = token
+            }
+            return
+        }
+
+        // Email verification: remic://verify or https://api.remic.app/api/auth/verify-email
+        let isVerifyScheme = url.scheme == "remic" && url.host == "verify"
+        let isVerifyUniversal = url.host == "api.remic.app" && url.path.contains("/auth/verify-email")
+
+        if isVerifyScheme || isVerifyUniversal {
+            let status = params["status"]
+            let message = params["message"]
+
+            if status == "success" {
+                showToast(L("Email verified successfully!"), isError: false)
+                Task { await AuthManager.shared.refreshUser() }
+            } else if status == "error" {
+                showToast(message ?? L("Verification failed"), isError: true)
+            }
         }
     }
 
@@ -187,5 +218,12 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 
         completionHandler()
     }
+}
+
+// MARK: - Notification Names
+
+extension Notification.Name {
+    /// Posted when a deep link requires dismissing auth-related sheets
+    static let dismissAuthSheets = Notification.Name("dismissAuthSheets")
 }
 

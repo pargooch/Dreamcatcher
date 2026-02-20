@@ -309,6 +309,9 @@ struct ForgotPasswordSheet: View {
                 email = prefillEmail
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .dismissAuthSheets)) { _ in
+            dismiss()
+        }
     }
 
     private func sendReset() async {
@@ -317,5 +320,145 @@ struct ForgotPasswordSheet: View {
         isSending = false
         resultMessage = message
         isSuccess = !message.lowercased().contains("fail") && !message.lowercased().contains("error")
+    }
+}
+
+// MARK: - Reset Password Sheet
+
+struct ResetPasswordSheet: View {
+    let token: String
+
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var password = ""
+    @State private var confirmPassword = ""
+    @State private var isSubmitting = false
+    @State private var resultMessage: String?
+    @State private var isSuccess = false
+
+    private var isSubmitDisabled: Bool {
+        isSubmitting || password.count < 8 || password != confirmPassword
+    }
+
+    var body: some View {
+        NavigationView {
+            ScrollView {
+                VStack(spacing: ComicTheme.Dimensions.gutterWidth) {
+                    SoundEffectText(
+                        text: L("NEW PASSWORD!"),
+                        fillColor: ComicTheme.Colors.deepPurple,
+                        fontSize: 26
+                    )
+                    .padding(.top, 8)
+
+                    if !isSuccess {
+                        ComicPanelCard(titleBanner: L("Reset Password"), bannerColor: ComicTheme.Colors.deepPurple) {
+                            VStack(spacing: 14) {
+                                Text(L("Enter your new password (minimum 8 characters)."))
+                                    .font(ComicTheme.Typography.speechBubble(13))
+                                    .foregroundColor(.secondary)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                                ComicSecureField(
+                                    icon: "lock.fill",
+                                    iconColor: ComicTheme.Colors.deepPurple,
+                                    placeholder: L("New Password"),
+                                    text: $password
+                                )
+
+                                ComicSecureField(
+                                    icon: "lock.rotation",
+                                    iconColor: ComicTheme.Colors.deepPurple,
+                                    placeholder: L("Confirm Password"),
+                                    text: $confirmPassword
+                                )
+
+                                if !password.isEmpty && password.count < 8 {
+                                    Text(L("Password must be at least 8 characters"))
+                                        .font(ComicTheme.Typography.speechBubble(12))
+                                        .foregroundColor(ComicTheme.Colors.crimsonRed)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                }
+
+                                if !confirmPassword.isEmpty && password != confirmPassword {
+                                    Text(L("Passwords do not match"))
+                                        .font(ComicTheme.Typography.speechBubble(12))
+                                        .foregroundColor(ComicTheme.Colors.crimsonRed)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                }
+                            }
+                        }
+
+                        if isSubmitting {
+                            VStack(spacing: 12) {
+                                ProgressView()
+                                    .tint(ComicTheme.Colors.deepPurple)
+                                Text(L("Resetting..."))
+                                    .font(ComicTheme.Typography.speechBubble(13))
+                                    .foregroundColor(.secondary)
+                            }
+                        } else {
+                            Button {
+                                Task { await submitReset() }
+                            } label: {
+                                Label(L("Reset Password"), systemImage: "lock.rotation")
+                            }
+                            .buttonStyle(.comicPrimary(color: ComicTheme.Colors.deepPurple))
+                            .disabled(isSubmitDisabled)
+                            .opacity(isSubmitDisabled ? 0.5 : 1.0)
+                        }
+                    }
+
+                    if let resultMessage {
+                        Text(resultMessage)
+                            .font(ComicTheme.Typography.speechBubble(13))
+                            .foregroundColor(isSuccess ? ComicTheme.Colors.emeraldGreen : ComicTheme.Colors.crimsonRed)
+                            .speechBubble()
+                    }
+
+                    if isSuccess {
+                        Button {
+                            dismiss()
+                        } label: {
+                            Label(L("Done"), systemImage: "checkmark.circle.fill")
+                        }
+                        .buttonStyle(.comicPrimary(color: ComicTheme.Colors.emeraldGreen))
+                    }
+                }
+                .padding()
+            }
+            .halftoneBackground()
+            .navigationTitle(L("Reset Password"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(L("Cancel")) {
+                        dismiss()
+                    }
+                    .foregroundStyle(ComicTheme.Colors.crimsonRed)
+                    .fontWeight(.bold)
+                }
+            }
+        }
+    }
+
+    private func submitReset() async {
+        isSubmitting = true
+        do {
+            let response = try await BackendService.shared.resetPassword(token: token, password: password)
+            isSuccess = true
+            resultMessage = response.message ?? L("Password reset successfully! You can now log in.")
+        } catch let error as BackendError {
+            isSuccess = false
+            if case .serverError(_, let message) = error {
+                resultMessage = message ?? L("Failed to reset password")
+            } else {
+                resultMessage = error.localizedDescription
+            }
+        } catch {
+            isSuccess = false
+            resultMessage = error.localizedDescription
+        }
+        isSubmitting = false
     }
 }
